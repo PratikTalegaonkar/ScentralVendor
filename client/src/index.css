@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(45, 100%, 51%);
+  --primary-foreground: hsl(26, 100%, 4%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom Scentra colors */
+  --luxe-gold: hsl(45, 100%, 51%);
+  --platinum: hsl(0, 0%, 75%);
+  --charcoal: hsl(0, 0%, 10%);
+  --charcoal-light: hsl(0, 0%, 20%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(45, 100%, 51%);
+  --primary-foreground: hsl(26, 100%, 4%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  .text-luxe-gold {
+    color: hsl(45, 100%, 51%);
+  }
+  
+  .bg-luxe-gold {
+    background-color: hsl(45, 100%, 51%);
+  }
+  
+  .text-platinum {
+    color: hsl(0, 0%, 75%);
+  }
+  
+  .bg-platinum {
+    background-color: hsl(0, 0%, 75%);
+  }
+  
+  .text-charcoal {
+    color: hsl(0, 0%, 10%);
+  }
+  
+  .bg-charcoal {
+    background-color: hsl(0, 0%, 10%);
+  }
+  
+  .bg-charcoal-light {
+    background-color: hsl(0, 0%, 20%);
+  }
+  
+  .border-luxe-gold {
+    border-color: hsl(45, 100%, 51%);
+  }
+  
+  .ring-luxe-gold {
+    --tw-ring-color: hsl(45, 100%, 51%);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 20px hsla(45, 100%, 51%, 0.4); }
+  50% { box-shadow: 0 0 40px hsla(45, 100%, 51%, 0.8); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-pulse-gold {
+  animation: pulseGold 2s infinite;
+}
+
+.screensaver-image {
+  transition: opacity 1s ease-in-out;
+}
+
+/* Touch-friendly sizing */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Vending machine optimized styles */
+.vending-screen {
+  height: 100vh;
+  width: 100vw;
+  overflow: auto;
+}
