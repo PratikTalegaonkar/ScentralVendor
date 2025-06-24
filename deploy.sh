@@ -16,7 +16,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
+if ! docker compose version &> /dev/null; then
     echo "❌ Docker Compose is not installed. Installing..."
     sudo apt-get update
     sudo apt-get install -y docker-compose-plugin
@@ -37,10 +37,10 @@ fi
 
 # Build and start services
 echo "🏗️  Building Docker images..."
-docker-compose build --no-cache
+docker compose build --no-cache
 
 echo "🗄️  Starting database..."
-docker-compose up -d postgres
+docker compose up -d postgres
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
@@ -48,14 +48,14 @@ sleep 10
 
 # Run database migrations
 echo "🗃️  Running database migrations..."
-docker-compose run --rm app npm run db:push
+docker compose run --rm app npm run db:push
 
 echo "🚀 Starting all services..."
-docker-compose up -d
+docker compose up -d
 
 # Show status
 echo "📊 Service Status:"
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "✅ Deployment complete!"
@@ -65,10 +65,10 @@ echo "   - Direct access: http://localhost:5000"
 echo "   - With Nginx: http://localhost"
 echo ""
 echo "🔧 Useful commands:"
-echo "   - View logs: docker-compose logs -f"
-echo "   - Stop services: docker-compose down"
-echo "   - Restart app: docker-compose restart app"
-echo "   - View database: docker-compose exec postgres psql -U scentra -d scentra_vending"
+echo "   - View logs: docker compose logs -f"
+echo "   - Stop services: docker compose down"
+echo "   - Restart app: docker compose restart app"
+echo "   - View database: docker compose exec postgres psql -U scentra -d scentra_vending"
 echo ""
 echo "📱 For touch screen setup, configure your display and browser to launch:"
 echo "   chromium-browser --kiosk --disable-infobars http://localhost"
