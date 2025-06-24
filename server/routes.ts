@@ -6,11 +6,16 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import Razorpay from "razorpay";
 
-// Initialize Razorpay (only if keys are provided)
-const isRazorpayEnabled = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET;
+// Initialize Razorpay with test credentials
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_JC3STLbbaI4tzF';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'UWgSetKohp5TbYd2RwYMiNfQ';
+
+const isRazorpayEnabled = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && RAZORPAY_KEY_ID.startsWith('rzp_');
+console.log('Razorpay Enabled:', isRazorpayEnabled, 'Key ID:', RAZORPAY_KEY_ID);
+
 const razorpay = isRazorpayEnabled ? new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET
 }) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -159,8 +164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/razorpay/config", async (req, res) => {
     res.json({
       enabled: isRazorpayEnabled,
-      testMode: !isRazorpayEnabled,
-      keyId: isRazorpayEnabled ? process.env.RAZORPAY_KEY_ID : 'rzp_test_demo'
+      testMode: false, // We're using real Razorpay test keys
+      keyId: RAZORPAY_KEY_ID
     });
   });
 
