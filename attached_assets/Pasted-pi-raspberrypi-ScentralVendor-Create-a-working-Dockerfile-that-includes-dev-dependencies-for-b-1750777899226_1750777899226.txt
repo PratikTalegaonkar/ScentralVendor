@@ -1,0 +1,126 @@
+pi@raspberrypi:~/ScentralVendor $ # Create a working Dockerfile that includes dev dependencies for build
+cat > Dockerfile << 'EOF'
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci && npm cache clean --force
+COPY . .
+RUN npm run build && npm prune --production
+EXPOSE 5000
+CMD ["npm", "start"]
+EOF
+
+# Build without cache
+docker compose build --no-cache app
+
+# Start database
+docker compose up -d postgres
+
+# Wait for database
+sleep 20
+
+# Run migrations
+docker compose run --rm app npm run db:push
+
+# Start all services
+docker compose up -d
+
+# Check status
+docker compose ps
+
+echo "✅ Deployment complete! Access at http://localhost:5000"
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 81.1s (8/10)                                                                                           docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.1s
+ => => transferring dockerfile: 218B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         1.8s
+ => [app internal] load .dockerignore                                                                                         0.1s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e   0.0s
+ => [app internal] load build context                                                                                         0.1s
+ => => transferring context: 7.14kB                                                                                           0.0s
+ => CACHED [app 2/6] WORKDIR /app                                                                                             0.0s
+ => [app 3/6] COPY package*.json ./                                                                                           0.7s
+ => ERROR [app 4/6] RUN npm ci && npm cache clean --force                                                                    78.2s
+------                                                                                                                             
+ > [app 4/6] RUN npm ci && npm cache clean --force:                                                                                
+13.98 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is                                           
+13.99 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is                                           
+18.71 npm warn tar TAR_ENTRY_ERROR ENOSPC: no space left on device, write                                                          
+18.71 npm warn tar TAR_ENTRY_ERROR ENOSPC: no space left on device, write                                                          
+19.76 npm notice
+19.76 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+19.76 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+19.76 npm notice To update run: npm install -g npm@11.4.2
+19.76 npm notice
+19.76 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-06-24T15_01_56_757Z-debug-0.log
+------
+failed to solve: process "/bin/sh -c npm ci && npm cache clean --force" did not complete successfully: exit code: 1
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 1/1
+ ✔ Container scentra-db  Running                                                                                              0.0s 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Creating 1/1
+ ✔ Container scentra-db  Running                                                                                              0.0s 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 79.1s (8/10)                                                                                           docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.1s
+ => => transferring dockerfile: 218B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         1.4s
+ => [app internal] load .dockerignore                                                                                         0.0s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e   0.0s
+ => [app internal] load build context                                                                                         0.1s
+ => => transferring context: 6.95kB                                                                                           0.0s
+ => CACHED [app 2/6] WORKDIR /app                                                                                             0.0s
+ => CACHED [app 3/6] COPY package*.json ./                                                                                    0.0s
+ => ERROR [app 4/6] RUN npm ci && npm cache clean --force                                                                    77.1s
+------                                                                                                                             
+ > [app 4/6] RUN npm ci && npm cache clean --force:                                                                                
+10.49 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is                                           
+10.56 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is                                           
+16.80 npm warn tar TAR_ENTRY_ERROR ENOSPC: no space left on device, write                                                          
+16.80 npm warn tar TAR_ENTRY_ERROR ENOSPC: no space left on device, write                                                          
+17.59 npm notice
+17.59 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+17.59 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+17.59 npm notice To update run: npm install -g npm@11.4.2
+17.59 npm notice
+17.59 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-06-24T15_03_36_778Z-debug-0.log
+------
+failed to solve: process "/bin/sh -c npm ci && npm cache clean --force" did not complete successfully: exit code: 1
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 74.8s (8/10)                                                                                           docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.4s
+ => => transferring dockerfile: 218B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         1.4s
+ => [app internal] load .dockerignore                                                                                         0.1s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app internal] load build context                                                                                         0.1s
+ => => transferring context: 6.95kB                                                                                           0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e   0.0s
+ => CACHED [app 2/6] WORKDIR /app                                                                                             0.0s
+ => CACHED [app 3/6] COPY package*.json ./                                                                                    0.0s
+ => ERROR [app 4/6] RUN npm ci && npm cache clean --force                                                                    72.6s
+------                                                                                                                             
+ > [app 4/6] RUN npm ci && npm cache clean --force:                                                                                
+14.61 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is                                           
+15.43 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is                                           
+26.16 npm warn tar TAR_ENTRY_ERROR ENOSPC: no space left on device, write                                                          
+26.21 npm notice                                                                                                                   
+26.21 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+26.21 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+26.21 npm notice To update run: npm install -g npm@11.4.2
+26.21 npm notice
+26.21 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-06-24T15_05_01_883Z-debug-0.log
+------
+failed to solve: process "/bin/sh -c npm ci && npm cache clean --force" did not complete successfully: exit code: 1
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME         IMAGE                COMMAND                  SERVICE    CREATED         STATUS                   PORTS
+scentra-db   postgres:15-alpine   "docker-entrypoint.s…"   postgres   7 minutes ago   Up 7 minutes (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+✅ Deployment complete! Access at http://localhost:5000

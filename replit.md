@@ -102,6 +102,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 24, 2025 - Raspberry Pi Deployment Success
+- Successfully deployed Scentra vending machine on Raspberry Pi with Docker
+- Fixed Dockerfile to include drizzle-kit for database migrations
+- Confirmed working deployment with Razorpay payment integration
+- Created comprehensive fresh install guide for new Raspberry Pi setups
+- Optimized Docker configuration for ARM architecture
+- Application accessible at http://localhost:5000 with full functionality
+
 ### December 25, 2024 - Razorpay Integration & Docker Deployment
 - Configured Razorpay as exclusive payment processor with test credentials
 - Enhanced payment UI with detailed supported payment methods
@@ -112,11 +120,11 @@ Preferred communication style: Simple, everyday language.
 - Added comprehensive deployment documentation
 
 ### Key Files Added/Modified
-- Docker configuration: Dockerfile, docker-compose.yml, nginx.conf
-- Deployment scripts: deploy.sh, .env.production
-- Documentation: PROJECT_REQUIREMENTS.md, RASPBERRY_PI_DEPLOYMENT.md
+- Docker configuration: Dockerfile (fixed), docker-compose.yml
+- Deployment documentation: FRESH_RASPBERRY_PI_SETUP.md
+- Deployment scripts: deploy.sh, cleanup-and-deploy.sh
+- Environment configuration: .env with Razorpay credentials
 - Payment integration: Enhanced payment-modal.tsx and thank-you-screen.tsx
-- Database initialization: init.sql
 
 ## Changelog
 

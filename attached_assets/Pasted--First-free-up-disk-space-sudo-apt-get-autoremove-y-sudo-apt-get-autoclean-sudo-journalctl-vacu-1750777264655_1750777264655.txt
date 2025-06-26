@@ -1,0 +1,197 @@
+# First, free up disk space
+sudo apt-get autoremove -y
+sudo apt-get autoclean
+sudo journalctl --vacuum-time=3d
+docker system prune -af --volumes
+
+# Check available space
+df -h
+
+# Create a minimal deployment script
+cat > deploy-minimal.sh << 'EOF'
+#!/bin/bash
+echo "Deploying Scentra Vending Machine..."
+
+# Clean up Docker
+docker compose down 2>/dev/null || true
+docker system prune -f
+
+# Create minimal Dockerfile
+cat > Dockerfile << 'DEOF'
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY . .
+RUN npm run build
+EXPOSE 5000
+CMD ["npm", "start"]
+DEOF
+
+# Build and deploy
+docker compose build --no-cache
+docker compose up -d postgres
+sleep 15
+docker compose run --rm app npm run db:push
+./deploy-minimal.shimal.sh//localhost:5000"
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+0 upgraded, 0 newly installed, 0 to remove and 19 not upgraded.
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+Vacuuming done, freed 0B of archived journals from /run/log/journal/de323c4bfc1047a0a3ac3ea22ee18922.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+Deleted build cache objects:
+z15y331s462uekpw8qkt1msvb
+2exfnywmcydc2mu1bxcbsvirw
+nr1uf0bpgqadfomgboe3o4223
+w30uthv3cplm7oo77jupc9oqe
+l0amx7um670ohj18c96ezsctc
+3f2fh0q0v8rzomrotcu3vpsuc
+at0080p64zqeoh033zgeqyy4n
+nup8eud2l2zdiktb2d3vodtqa
+mqtlj06gc8fur6wl98csim9u7
+n5qosj7tjcd591pocd5pwvdjz
+x09yjabpascmrmavh2o2iq9b7
+jbsg04xv9bbv6bxo77y22k1jq
+vh4eqbbziuez5u8ejflk95m65
+z0p9p65464xst77tdjohylr60
+lipb7e2duul8fum1n27aj710x
+ija8rhdrvhivjf6yk1z5iwvz6
+o4553f6aqvxtk8v2yhuc6x9bj
+79199zzok33yeo10iwmfmnle7
+t2l8laze3syxaw5jz5boma2va
+755ik77b4d5erlb7lc62vb1ms
+sdt0cj6k7doecjibsvfcwkpvv
+dijy5znwxfjmeuqz4cz760ghj
+5ghdpojgk76p56lhpnda631ep
+
+Total reclaimed space: 676.8MB
+Filesystem      Size  Used Avail Use% Mounted on
+udev            3.9G     0  3.9G   0% /dev
+tmpfs           807M   14M  793M   2% /run
+/dev/mmcblk0p2  6.9G  5.8G  727M  89% /
+tmpfs           4.0G  416K  4.0G   1% /dev/shm
+tmpfs           5.0M   48K  5.0M   1% /run/lock
+/dev/mmcblk0p1  510M   68M  443M  14% /boot/firmware
+tmpfs           807M  176K  807M   1% /run/user/1000
+Deploying Scentra Vending Machine...
+Total reclaimed space: 0B
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 81.7s (10/10) FINISHED                                                                                 docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.2s
+ => => transferring dockerfile: 203B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         2.8s
+ => [app internal] load .dockerignore                                                                                         0.2s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e  15.5s
+ => => resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e       0.2s
+ => => sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB                                0.0s
+ => => sha256:c2281c62c4aadf92ea71a6c05e6c8e640634b6a99dc52a6e54575f9cb298a037 1.72kB / 1.72kB                                0.0s
+ => => sha256:c5914b9dd279c0f596933e65906cb3c6d2da5aae71e863e819e9b963997b1c17 6.20kB / 6.20kB                                0.0s
+ => => sha256:6e771e15690e2fabf2332d3a3b744495411d6e0b00b2aea64419b58b0066cf81 3.99MB / 3.99MB                                2.2s
+ => => sha256:8bfa36aa66ce614f6da68a16fb71f875da8d623310f0cb80ae1ecfa092f587f6 1.26MB / 1.26MB                                1.5s
+ => => sha256:d84c815451acbca96b6e6bdb479929222bec57121dfe10cc5b128c5c2dbaf10a 39.66MB / 39.66MB                             13.2s
+ => => sha256:02bb84e9f3412827f177bc6c020812249b32a8425d2c1858e9d71bd4c015f031 443B / 443B                                    2.3s
+ => => extracting sha256:6e771e15690e2fabf2332d3a3b744495411d6e0b00b2aea64419b58b0066cf81                                     0.1s
+ => => extracting sha256:d84c815451acbca96b6e6bdb479929222bec57121dfe10cc5b128c5c2dbaf10a                                     0.7s
+ => => extracting sha256:8bfa36aa66ce614f6da68a16fb71f875da8d623310f0cb80ae1ecfa092f587f6                                     0.0s
+ => => extracting sha256:02bb84e9f3412827f177bc6c020812249b32a8425d2c1858e9d71bd4c015f031                                     0.0s
+ => [app internal] load build context                                                                                         0.7s
+ => => transferring context: 1.34MB                                                                                           0.0s
+ => [app 2/6] WORKDIR /app                                                                                                   16.4s
+ => [app 3/6] COPY package*.json ./                                                                                           0.4s
+ => [app 4/6] RUN npm ci --omit=dev && npm cache clean --force                                                               44.2s
+ => [app 5/6] COPY . .                                                                                                        0.6s 
+ => ERROR [app 6/6] RUN npm run build                                                                                         0.9s 
+------                                                                                                                             
+ > [app 6/6] RUN npm run build:                                                                                                    
+0.682                                                                                                                              
+0.682 > rest-express@1.0.0 build                                                                                                   
+0.682 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+0.682 
+0.686 sh: vite: not found
+------
+failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 127
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 12/12
+ ✔ postgres Pulled                                                                                                           66.3s 
+   ✔ d69d4d41cfe2 Pull complete                                                                                               2.2s 
+   ✔ c20934d0f998 Pull complete                                                                                               2.3s 
+   ✔ 7594c02b57c4 Pull complete                                                                                               2.4s 
+   ✔ f535fd73244a Pull complete                                                                                               2.6s 
+   ✔ c56f274f1dfd Pull complete                                                                                               2.7s 
+   ✔ 61bc61054664 Pull complete                                                                                              61.3s 
+   ✔ b4783ac10002 Pull complete                                                                                              61.5s 
+   ✔ be4562bc10f9 Pull complete                                                                                              61.6s 
+   ✔ 3af18444ceaf Pull complete                                                                                              61.7s 
+   ✔ 70b39a13dc59 Pull complete                                                                                              61.8s 
+   ✔ 9a4372d03dfc Pull complete                                                                                              61.9s 
+[+] Running 3/3
+ ✔ Network scentralvendor_default         Created                                                                             0.1s 
+ ✔ Volume "scentralvendor_postgres_data"  Created                                                                             0.0s 
+ ✔ Container scentra-db                   Started                                                                             2.9s 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Creating 2/2
+ ✔ Volume "scentralvendor_app_logs"  Created                                                                                  0.0s 
+ ✔ Container scentra-db              Running                                                                                  0.0s 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 3.8s (10/10) FINISHED                                                                                  docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.1s
+ => => transferring dockerfile: 203B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         1.2s
+ => [app internal] load .dockerignore                                                                                         0.1s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e   0.0s
+ => [app internal] load build context                                                                                         0.1s
+ => => transferring context: 6.95kB                                                                                           0.0s
+ => CACHED [app 2/6] WORKDIR /app                                                                                             0.0s
+ => CACHED [app 3/6] COPY package*.json ./                                                                                    0.0s
+ => CACHED [app 4/6] RUN npm ci --omit=dev && npm cache clean --force                                                         0.0s
+ => CACHED [app 5/6] COPY . .                                                                                                 0.0s
+ => ERROR [app 6/6] RUN npm run build                                                                                         1.7s
+------                                                                                                                             
+ > [app 6/6] RUN npm run build:                                                                                                    
+1.157                                                                                                                              
+1.157 > rest-express@1.0.0 build
+1.157 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+1.157 
+1.161 sh: vite: not found
+------
+failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 127
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 2.5s (10/10) FINISHED                                                                                  docker:default
+ => [app internal] load build definition from Dockerfile                                                                      0.3s
+ => => transferring dockerfile: 203B                                                                                          0.0s
+ => [app internal] load metadata for docker.io/library/node:18-alpine                                                         0.6s
+ => [app internal] load .dockerignore                                                                                         0.1s
+ => => transferring context: 2B                                                                                               0.0s
+ => [app 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e   0.0s
+ => [app internal] load build context                                                                                         0.2s
+ => => transferring context: 6.95kB                                                                                           0.0s
+ => CACHED [app 2/6] WORKDIR /app                                                                                             0.0s
+ => CACHED [app 3/6] COPY package*.json ./                                                                                    0.0s
+ => CACHED [app 4/6] RUN npm ci --omit=dev && npm cache clean --force                                                         0.0s
+ => CACHED [app 5/6] COPY . .                                                                                                 0.0s
+ => ERROR [app 6/6] RUN npm run build                                                                                         0.9s
+------                                                                                                                             
+ > [app 6/6] RUN npm run build:                                                                                                    
+0.545                                                                                                                              
+0.545 > rest-express@1.0.0 build
+0.545 > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+0.545 
+0.550 sh: vite: not found
+------
+failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 127
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME         IMAGE                COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+scentra-db   postgres:15-alpine   "docker-entrypoint.s…"   postgres   25 seconds ago   Up 23 seconds (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+App running at http://localhost:5000
