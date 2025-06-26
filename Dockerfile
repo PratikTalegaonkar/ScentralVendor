@@ -18,8 +18,10 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY --chown=nextjs:nodejs . .
 
-# Build application
-RUN npm run build
+# Build application and ensure correct structure
+RUN npm run build && \
+    mkdir -p dist/public && \
+    cp -r dist/client/* dist/public/ 2>/dev/null || true
 
 # Switch to non-root user
 USER nextjs
