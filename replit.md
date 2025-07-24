@@ -102,6 +102,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+
+### January 24, 2025 - Raspberry Pi Deployment Success
+- Successfully deployed Scentra vending machine on Raspberry Pi with Docker
+- Fixed Dockerfile to include drizzle-kit for database migrations
+- Confirmed working deployment with Razorpay payment integration
+- Created comprehensive fresh install guide for new Raspberry Pi setups
+- Optimized Docker configuration for ARM architecture
+- Application accessible at http://localhost:5000 with full functionality
+=======
 ### January 24, 2025 - Real-time Inventory Heatmap & Size-Based Pricing System
 - Implemented comprehensive real-time inventory heatmap showing most popular fragrance slots
 - Added slotUsageStats database table to track usage patterns and popularity scores
@@ -130,6 +139,7 @@ Preferred communication style: Simple, everyday language.
 - Created comprehensive fresh install guide for new Raspberry Pi setups
 - Database migrations and API endpoints responding correctly
 - Touch-optimized vending machine interface fully operational
+
 
 ### December 25, 2024 - Razorpay Integration & Docker Deployment
 - Configured Razorpay as exclusive payment processor with test credentials
