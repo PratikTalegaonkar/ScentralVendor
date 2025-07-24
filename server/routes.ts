@@ -6,11 +6,16 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import Razorpay from "razorpay";
 
-// Initialize Razorpay (only if keys are provided)
-const isRazorpayEnabled = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET;
+// Initialize Razorpay with test credentials
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_JC3STLbbaI4tzF';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'UWgSetKohp5TbYd2RwYMiNfQ';
+
+const isRazorpayEnabled = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && RAZORPAY_KEY_ID.startsWith('rzp_');
+console.log('Razorpay Enabled:', isRazorpayEnabled, 'Key ID:', RAZORPAY_KEY_ID);
+
 const razorpay = isRazorpayEnabled ? new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET
 }) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -159,8 +164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/razorpay/config", async (req, res) => {
     res.json({
       enabled: isRazorpayEnabled,
-      testMode: !isRazorpayEnabled,
-      keyId: isRazorpayEnabled ? process.env.RAZORPAY_KEY_ID : 'rzp_test_demo'
+      testMode: false, // We're using real Razorpay test keys
+      keyId: RAZORPAY_KEY_ID
     });
   });
 
@@ -370,6 +375,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedProduct);
     } catch (error) {
       res.status(500).json({ message: "Failed to update bottle stock" });
+    }
+  });
+
+  // Admin slot management - Update product slot assignment
+  app.put("/api/admin/products/:id/slot", authenticateAdmin, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const { slotType, slotNumber } = req.body;
+      
+      if (!['spray', 'bottle'].includes(slotType)) {
+        return res.status(400).json({ message: "Invalid slot type" });
+      }
+      
+      if (typeof slotNumber !== 'number' || slotNumber < 1) {
+        return res.status(400).json({ message: "Invalid slot number" });
+      }
+
+      // Validate slot ranges
+      if (slotType === 'spray' && (slotNumber < 1 || slotNumber > 5)) {
+        return res.status(400).json({ message: "Spray slots must be between 1-5" });
+      }
+      
+      if (slotType === 'bottle' && (slotNumber < 1 || slotNumber > 15)) {
+        return res.status(400).json({ message: "Bottle slots must be between 1-15" });
+      }
+
+      const updatedProduct = await storage.updateProductSlot(productId, slotType, slotNumber);
+      if (!updatedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update product slot" });
+    }
+  });
+
+  // Bottle Slots API
+  app.get('/api/admin/bottle-slots', authenticateAdmin, async (req, res) => {
+    try {
+      const slots = await storage.getBottleSlots();
+      res.json(slots);
+    } catch (error) {
+      console.error('Error getting bottle slots:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/admin/bottle-slots/:slotNumber/assign', authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const { productId, bottleSize } = req.body;
+      
+      if (!productId || !bottleSize || !['30ml', '60ml', '100ml'].includes(bottleSize)) {
+        return res.status(400).json({ message: 'Product ID and valid bottle size required' });
+      }
+      
+      const slot = await storage.assignBottleSlot(slotNumber, productId, bottleSize);
+      res.json(slot);
+    } catch (error) {
+      console.error('Error assigning bottle slot:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/admin/bottle-slots/:slotNumber/stock', authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const { stock } = req.body;
+      
+      if (typeof stock !== 'number' || stock < 0) {
+        return res.status(400).json({ message: 'Valid stock quantity required' });
+      }
+      
+      const slot = await storage.updateBottleSlotStock(slotNumber, stock);
+      if (!slot) {
+        return res.status(404).json({ message: 'Slot not found' });
+      }
+      
+      res.json(slot);
+    } catch (error) {
+      console.error('Error updating bottle slot stock:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/admin/bottle-slots/:slotNumber', authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const removed = await storage.removeBottleSlotAssignment(slotNumber);
+      
+      if (!removed) {
+        return res.status(404).json({ message: 'Slot not found' });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing bottle slot assignment:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Heatmap and Usage Analytics API
+  app.get('/api/admin/heatmap', authenticateAdmin, async (req, res) => {
+    try {
+      const heatmapData = await storage.getHeatmapData();
+      res.json(heatmapData);
+    } catch (error) {
+      console.error('Error getting heatmap data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/admin/usage-stats', authenticateAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getSlotUsageStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting usage stats:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/admin/record-usage', authenticateAdmin, async (req, res) => {
+    try {
+      const { slotNumber, slotType, productId } = req.body;
+      
+      if (!slotNumber || !slotType || !['spray', 'bottle'].includes(slotType)) {
+        return res.status(400).json({ message: 'Slot number and valid slot type required' });
+      }
+      
+      await storage.recordSlotUsage(slotNumber, slotType, productId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error recording usage:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 

@@ -1,0 +1,72 @@
+pi@pi:~/ScentralVendor $ sudo ./deploy.sh
+Starting Scentra Vending Machine deployment...
+Building application...
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Building 82.7s (15/15) FINISHED                                                                                                
+ => [internal] load local bake definitions                                                                                    0.0s
+ => => reading from stdin 371B                                                                                                0.0s
+ => [internal] load build definition from Dockerfile                                                                          0.1s
+ => => transferring dockerfile: 614B                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:18-alpine                                                             2.9s
+ => [internal] load .dockerignore                                                                                             0.1s
+ => => transferring context: 2B                                                                                               0.0s
+ => [1/8] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e      17.5s
+ => => resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e       0.1s
+ => => sha256:c5914b9dd279c0f596933e65906cb3c6d2da5aae71e863e819e9b963997b1c17 6.20kB / 6.20kB                                0.0s
+ => => sha256:6e771e15690e2fabf2332d3a3b744495411d6e0b00b2aea64419b58b0066cf81 3.99MB / 3.99MB                                1.9s
+ => => sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB                                0.0s
+ => => sha256:c2281c62c4aadf92ea71a6c05e6c8e640634b6a99dc52a6e54575f9cb298a037 1.72kB / 1.72kB                                0.0s
+ => => sha256:d84c815451acbca96b6e6bdb479929222bec57121dfe10cc5b128c5c2dbaf10a 39.66MB / 39.66MB                             16.0s
+ => => sha256:8bfa36aa66ce614f6da68a16fb71f875da8d623310f0cb80ae1ecfa092f587f6 1.26MB / 1.26MB                                1.6s
+ => => sha256:02bb84e9f3412827f177bc6c020812249b32a8425d2c1858e9d71bd4c015f031 443B / 443B                                    2.1s
+ => => extracting sha256:6e771e15690e2fabf2332d3a3b744495411d6e0b00b2aea64419b58b0066cf81                                     0.1s
+ => => extracting sha256:d84c815451acbca96b6e6bdb479929222bec57121dfe10cc5b128c5c2dbaf10a                                     0.7s
+ => => extracting sha256:8bfa36aa66ce614f6da68a16fb71f875da8d623310f0cb80ae1ecfa092f587f6                                     0.0s
+ => => extracting sha256:02bb84e9f3412827f177bc6c020812249b32a8425d2c1858e9d71bd4c015f031                                     0.0s
+ => [internal] load build context                                                                                             0.2s
+ => => transferring context: 1.32MB                                                                                           0.0s
+ => [2/8] RUN apk add --no-cache dumb-init                                                                                    5.3s
+ => [3/8] RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001                                                         0.4s 
+ => [4/8] WORKDIR /app                                                                                                        0.2s 
+ => [5/8] COPY package*.json ./                                                                                               0.2s 
+ => [6/8] RUN npm ci && npm cache clean --force                                                                              40.8s 
+ => [7/8] COPY --chown=nextjs:nodejs . .                                                                                      0.3s 
+ => [8/8] RUN npm run build && npm prune --production                                                                        11.8s 
+ => exporting to image                                                                                                        2.7s 
+ => => exporting layers                                                                                                       2.7s 
+ => => writing image sha256:088f96d07670655ab41ee5bd0097921f6b5523e70fc8c04c5bd5effee34646ee                                  0.0s 
+ => => naming to docker.io/library/scentralvendor-app                                                                         0.0s 
+ => resolving provenance for metadata file                                                                                    0.0s
+[+] Building 1/1
+ ✔ app  Built                                                                                                                 0.0s 
+Starting database...
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 12/12
+ ✔ postgres Pulled                                                                                                           28.5s 
+   ✔ d69d4d41cfe2 Pull complete                                                                                               1.8s 
+   ✔ c20934d0f998 Pull complete                                                                                               1.9s 
+   ✔ 7594c02b57c4 Pull complete                                                                                               2.0s 
+   ✔ f535fd73244a Pull complete                                                                                               2.1s 
+   ✔ c56f274f1dfd Pull complete                                                                                               2.2s 
+   ✔ 61bc61054664 Pull complete                                                                                              24.5s 
+   ✔ b4783ac10002 Pull complete                                                                                              24.6s 
+   ✔ be4562bc10f9 Pull complete                                                                                              24.7s 
+   ✔ 3af18444ceaf Pull complete                                                                                              24.7s 
+   ✔ 70b39a13dc59 Pull complete                                                                                              24.8s 
+   ✔ 9a4372d03dfc Pull complete                                                                                              24.9s 
+[+] Running 3/3
+ ✔ Network scentralvendor_default         Created                                                                             0.0s 
+ ✔ Volume "scentralvendor_postgres_data"  Created                                                                             0.0s 
+ ✔ Container scentra-db                   Started                                                                             7.2s 
+Waiting for database...
+Running database migrations...
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Creating 2/2
+ ✔ Volume "scentralvendor_app_logs"  Created                                                                                  0.0s 
+ ✔ Container scentra-db              Running                                                                                  0.0s 
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+sh: drizzle-kit: not found
+

@@ -1,0 +1,92 @@
+pi@pi:~/ScentralVendor $ # Stop the failing container
+sudo docker compose down
+
+# Rebuild with the fixed Dockerfile
+sudo docker compose build --no-cache app
+
+# Start database
+sudo docker compose up -d postgres
+
+# Wait for database
+sleep 15
+
+# Start the application
+sudo docker compose up -d app
+
+# Check status
+sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Building 49.3s (15/15) FINISHED                                                                                                                                     
+ => [internal] load local bake definitions                                                                                                                         0.0s
+ => => reading from stdin 371B                                                                                                                                     0.0s
+ => [internal] load build definition from Dockerfile                                                                                                               0.0s
+ => => transferring dockerfile: 1.00kB                                                                                                                             0.0s
+ => [internal] load metadata for docker.io/library/node:18-alpine                                                                                                  1.7s
+ => [internal] load .dockerignore                                                                                                                                  0.0s
+ => => transferring context: 2B                                                                                                                                    0.0s
+ => CACHED [1/8] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e                                     0.0s
+ => [internal] load build context                                                                                                                                  0.1s
+ => => transferring context: 30.36kB                                                                                                                               0.0s
+ => [2/8] RUN apk add --no-cache dumb-init                                                                                                                         2.2s
+ => [3/8] RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001                                                                                              0.4s 
+ => [4/8] WORKDIR /app                                                                                                                                             0.1s 
+ => [5/8] COPY package*.json ./                                                                                                                                    0.2s 
+ => [6/8] RUN npm ci && npm cache clean --force                                                                                                                   33.5s 
+ => [7/8] COPY --chown=nextjs:nodejs . .                                                                                                                           0.4s 
+ => [8/8] RUN npm run build &&     mkdir -p dist/public &&     cp -r dist/client/* dist/public/ 2>/dev/null || true                                                7.6s 
+ => exporting to image                                                                                                                                             2.8s 
+ => => exporting layers                                                                                                                                            2.7s 
+ => => writing image sha256:e2ca5efc58f2098575513c94a27ea65e64a757567546b30b7b78bbbcf5cae557                                                                       0.0s 
+ => => naming to docker.io/library/scentralvendor-app                                                                                                              0.0s 
+ => resolving provenance for metadata file                                                                                                                         0.0s 
+[+] Building 1/1                                                                                                                                                        
+ ✔ app  Built                                                                                                                                                      0.0s 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 2/2
+ ✔ Network scentralvendor_default  Created                                                                                                                         0.0s 
+ ✔ Container scentra-db            Started                                                                                                                         0.4s 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 2/2
+ ✔ Container scentra-db   Healthy                                                                                                                                  0.7s 
+ ✔ Container scentra-app  Started                                                                                                                                  0.9s 
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED          STATUS                                     PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        1 second ago     Up Less than a second (health: starting)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   17 seconds ago   Up 16 seconds (healthy)                    0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED          STATUS                         PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        26 seconds ago   Restarting (1) 5 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   42 seconds ago   Up 41 seconds (healthy)        0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED          STATUS                         PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        40 seconds ago   Restarting (1) 6 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   56 seconds ago   Up 56 seconds (healthy)        0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                          PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        53 seconds ago       Restarting (1) 19 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                                     PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        About a minute ago   Up Less than a second (health: starting)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)                0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                         PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        About a minute ago   Restarting (1) 8 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)    0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                          PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        About a minute ago   Restarting (1) 15 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                          PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        About a minute ago   Restarting (1) 21 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ 

@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import VirtualInputLogin from '@/components/ui/virtual-input-login';
+import VirtualInput from '@/components/ui/virtual-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Package, Database, Plus, Edit3, Trash2, RefreshCw } from 'lucide-react';
+import HeatmapDisplay from './heatmap-display';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Order } from '@shared/schema';
@@ -22,6 +23,9 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
     name: '',
     description: '',
     price: '',
+    price30ml: '25',
+    price60ml: '45', 
+    price100ml: '65',
     imageUrl: '',
     available: true
   });
@@ -52,7 +56,7 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
         title: "Success",
         description: "Product created successfully",
       });
-      setNewProduct({ name: '', description: '', price: '', imageUrl: '', available: true });
+      setNewProduct({ name: '', description: '', price: '', price30ml: '25', price60ml: '45', price100ml: '65', imageUrl: '', available: true });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
     },
@@ -154,20 +158,52 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
     },
   });
 
-  const handleCreateProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProduct.name || !newProduct.description || !newProduct.price || !newProduct.imageUrl) {
+  const updateProductSlotMutation = useMutation({
+    mutationFn: async ({ productId, slotType, slotNumber }: { productId: number; slotType: 'spray' | 'bottle'; slotNumber: number }) => {
+      const response = await apiRequest('PUT', `/api/admin/products/${productId}/slot`, { slotType, slotNumber });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Product slot assigned successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    },
+    onError: () => {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Failed to assign product slot",
         variant: "destructive",
       });
+    },
+  });
+
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Only validate on form submission
+    if (!newProduct.name?.trim() || !newProduct.description?.trim() || !newProduct.price?.trim()) {
+      // Silently prevent submission without showing error
+      return;
+    }
+
+    const priceValue = parseFloat(newProduct.price);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      // Silently prevent submission without showing error
       return;
     }
 
     createProductMutation.mutate({
       ...newProduct,
-      price: parseInt(newProduct.price) * 100, // Convert to paise (cents equivalent for INR)
+      name: newProduct.name.trim(),
+      description: newProduct.description.trim(),
+      imageUrl: newProduct.imageUrl?.trim() || '',
+      price: Math.round(priceValue * 100), // Convert to cents
+      price30ml: Math.round(parseFloat(newProduct.price30ml) * 100), // Convert to cents
+      price60ml: Math.round(parseFloat(newProduct.price60ml) * 100), // Convert to cents
+      price100ml: Math.round(parseFloat(newProduct.price100ml) * 100), // Convert to cents
     });
   };
 
@@ -269,44 +305,85 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                 <form onSubmit={handleCreateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name" className="text-white">Product Name</Label>
-                    <Input
+                    <VirtualInputLogin
                       id="name"
                       value={newProduct.name}
-                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400"
+                      onChange={(value) => setNewProduct({ ...newProduct, name: value })}
+                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-12 text-lg"
                       placeholder="e.g., Midnight Rose"
+                      maxLength={100}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="price" className="text-white">Price (₹)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="1"
-                      value={newProduct.price}
-                      onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400"
-                      placeholder="1500"
-                    />
+                  {/* Pricing Section */}
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="price" className="text-white">Spray Price (₹)</Label>
+                      <VirtualInputLogin
+                        id="price"
+                        value={newProduct.price}
+                        onChange={(value) => setNewProduct({ ...newProduct, price: value })}
+                        className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-12 text-lg"
+                        placeholder="1500"
+                        maxLength={10}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label htmlFor="price-30ml" className="text-white">30ml Bottle (₹)</Label>
+                        <VirtualInputLogin
+                          id="price-30ml"
+                          value={newProduct.price30ml}
+                          onChange={(value) => setNewProduct({ ...newProduct, price30ml: value })}
+                          className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-10 text-base"
+                          placeholder="25"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="price-60ml" className="text-white">60ml Bottle (₹)</Label>
+                        <VirtualInputLogin
+                          id="price-60ml"
+                          value={newProduct.price60ml}
+                          onChange={(value) => setNewProduct({ ...newProduct, price60ml: value })}
+                          className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-10 text-base"
+                          placeholder="45"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="price-100ml" className="text-white">100ml Bottle (₹)</Label>
+                        <VirtualInputLogin
+                          id="price-100ml"
+                          value={newProduct.price100ml}
+                          onChange={(value) => setNewProduct({ ...newProduct, price100ml: value })}
+                          className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-10 text-base"
+                          placeholder="65"
+                          maxLength={10}
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="description" className="text-white">Description</Label>
-                    <Textarea
+                    <VirtualInputLogin
                       id="description"
                       value={newProduct.description}
-                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400"
+                      onChange={(value) => setNewProduct({ ...newProduct, description: value })}
+                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 min-h-24 text-lg"
                       placeholder="Elegant and sophisticated fragrance..."
+                      maxLength={500}
                     />
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="imageUrl" className="text-white">Image URL</Label>
-                    <Input
+                    <VirtualInputLogin
                       id="imageUrl"
                       value={newProduct.imageUrl}
-                      onChange={(e) => setNewProduct({ ...newProduct, imageUrl: e.target.value })}
-                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400"
+                      onChange={(value) => setNewProduct({ ...newProduct, imageUrl: value })}
+                      className="bg-white/20 border-luxe-gold/30 text-white placeholder:text-gray-400 h-12 text-lg"
                       placeholder="https://images.unsplash.com/..."
+                      maxLength={500}
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -349,7 +426,14 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         />
                         <h3 className="text-white font-semibold mb-1">{product.name}</h3>
                         <p className="text-platinum text-sm mb-2">{product.description}</p>
-                        <p className="text-luxe-gold font-bold mb-3">{formatPrice(product.price)}</p>
+                        <div className="space-y-1 mb-3">
+                          <p className="text-luxe-gold font-bold">Spray: {formatPrice(product.price)}</p>
+                          <div className="text-sm text-gray-300">
+                            <p>30ml: {formatPrice(product.price30ml || 2500)}</p>
+                            <p>60ml: {formatPrice(product.price60ml || 4500)}</p>
+                            <p>100ml: {formatPrice(product.price100ml || 6500)}</p>
+                          </div>
+                        </div>
                         <div className="flex justify-between items-center">
                           <span className={`text-xs px-2 py-1 rounded ${
                             product.available ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
@@ -384,13 +468,16 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
           </TabsContent>
 
           <TabsContent value="inventory" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Vending Machine Spray Stock */}
+            {/* Real-time Heatmap Display */}
+            <HeatmapDisplay />
+            
+            <div className="grid grid-cols-1 gap-6">
+              {/* Spray Slot Management (Slots 1-5) */}
               <Card className="bg-white/10 backdrop-blur-sm border-luxe-gold/50">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Database className="mr-2 h-5 w-5 text-luxe-gold" />
-                    Vending Machine Spray Stock
+                    Spray Slot Management (Slots 1-5)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -400,58 +487,102 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       <p className="text-platinum">Loading inventory...</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {products?.map((product) => (
-                        <div key={product.id} className="bg-white/10 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="text-white font-semibold">{product.name}</h4>
-                              <p className="text-gray-400 text-sm">Current: {product.sprayStock} sprays</p>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      {Array.from({ length: 5 }, (_, slotIndex) => {
+                        const slotNumber = slotIndex + 1;
+                        const productInSlot = products?.find(p => p.spraySlot === slotNumber);
+                        
+                        return (
+                          <div key={slotNumber} className="bg-white/10 rounded-lg p-4 border-2 border-luxe-gold/30">
+                            <div className="text-center mb-3">
+                              <h4 className="text-luxe-gold font-bold text-lg">Slot {slotNumber}</h4>
                             </div>
-                            <div className={`px-2 py-1 rounded text-xs ${
-                              product.sprayStock > 50 ? 'bg-green-600' :
-                              product.sprayStock > 20 ? 'bg-yellow-600' : 'bg-red-600'
-                            }`}>
-                              {product.sprayStock > 50 ? 'Well Stocked' :
-                               product.sprayStock > 20 ? 'Low Stock' : 'Critical'}
-                            </div>
+                            
+                            {productInSlot ? (
+                              <div className="space-y-3">
+                                <div className="text-center">
+                                  <img
+                                    src={productInSlot.imageUrl}
+                                    alt={productInSlot.name}
+                                    className="w-16 h-16 object-cover rounded mx-auto mb-2"
+                                  />
+                                  <h5 className="text-white font-semibold text-sm">{productInSlot.name}</h5>
+                                  <p className="text-gray-400 text-xs">Stock: {productInSlot.sprayStock}</p>
+                                </div>
+                                
+                                <div className={`px-2 py-1 rounded text-xs text-center ${
+                                  productInSlot.sprayStock > 50 ? 'bg-green-600' :
+                                  productInSlot.sprayStock > 20 ? 'bg-yellow-600' : 'bg-red-600'
+                                }`}>
+                                  {productInSlot.sprayStock > 50 ? 'Well Stocked' :
+                                   productInSlot.sprayStock > 20 ? 'Low Stock' : 'Critical'}
+                                </div>
+                                
+                                <form onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const formData = new FormData(e.target as HTMLFormElement);
+                                  const quantity = parseInt(formData.get('sprayStock') as string);
+                                  updateSprayStockMutation.mutate({ productId: productInSlot.id, quantity });
+                                }} className="space-y-2">
+                                  <VirtualInputLogin
+                                    value={productInSlot.sprayStock.toString()}
+                                    onChange={(value) => {
+                                      const input = document.querySelector(`input[data-product-id="spray-${productInSlot.id}"]`) as HTMLInputElement;
+                                      if (input) input.value = value;
+                                    }}
+                                    className="bg-white/20 border-luxe-gold/30 text-white text-sm h-8 w-full"
+                                    placeholder="Stock"
+                                    maxLength={4}
+                                  />
+                                  <input type="hidden" name="sprayStock" data-product-id={`spray-${productInSlot.id}`} defaultValue={productInSlot.sprayStock} />
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    className="bg-luxe-gold hover:bg-yellow-600 text-charcoal w-full text-xs"
+                                    disabled={updateSprayStockMutation.isPending}
+                                  >
+                                    Update Stock
+                                  </Button>
+                                </form>
+                              </div>
+                            ) : (
+                              <div className="text-center space-y-3">
+                                <div className="w-16 h-16 bg-gray-600 rounded mx-auto flex items-center justify-center">
+                                  <Package className="text-gray-400 h-8 w-8" />
+                                </div>
+                                <p className="text-gray-400 text-sm">Empty Slot</p>
+                                <select 
+                                  className="bg-white/20 border-luxe-gold/30 text-white text-sm rounded px-2 py-1 w-full"
+                                  onChange={(e) => {
+                                    const productId = parseInt(e.target.value);
+                                    if (productId) {
+                                      updateProductSlotMutation.mutate({ productId, slotType: 'spray', slotNumber });
+                                    }
+                                  }}
+                                >
+                                  <option value="">Assign Product</option>
+                                  {products?.filter(p => !p.spraySlot).map(product => (
+                                    <option key={product.id} value={product.id} className="text-black">
+                                      {product.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                           </div>
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const formData = new FormData(e.target as HTMLFormElement);
-                            const quantity = parseInt(formData.get('sprayStock') as string);
-                            updateSprayStockMutation.mutate({ productId: product.id, quantity });
-                          }} className="flex gap-2">
-                            <Input
-                              name="sprayStock"
-                              type="number"
-                              min="0"
-                              defaultValue={product.sprayStock}
-                              className="bg-white/20 border-luxe-gold/30 text-white flex-1"
-                              placeholder="New quantity"
-                            />
-                            <Button
-                              type="submit"
-                              size="sm"
-                              className="bg-luxe-gold hover:bg-yellow-600 text-charcoal"
-                              disabled={updateSprayStockMutation.isPending}
-                            >
-                              Update
-                            </Button>
-                          </form>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Bottle Collection Stock */}
+              {/* Bottle Slot Management (Slots 1-15) */}
               <Card className="bg-white/10 backdrop-blur-sm border-luxe-gold/50">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Package className="mr-2 h-5 w-5 text-luxe-gold" />
-                    Bottle Collection Stock
+                    Bottle Slot Management (Slots 1-15)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -461,105 +592,99 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       <p className="text-platinum">Loading inventory...</p>
                     </div>
                   ) : (
-                    <div className="space-y-6">
-                      {products?.map((product) => (
-                        <div key={product.id} className="bg-white/10 rounded-lg p-4">
-                          <h4 className="text-white font-semibold mb-4">{product.name}</h4>
-                          
-                          {/* 30ml Bottles */}
-                          <div className="mb-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-300 text-sm">30ml Bottles</span>
-                              <span className="text-luxe-gold text-sm">{product.bottleStock30ml} units</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {Array.from({ length: 15 }, (_, slotIndex) => {
+                        const slotNumber = slotIndex + 1;
+                        const productInSlot = products?.find(p => p.bottleSlot === slotNumber);
+                        
+                        return (
+                          <div key={slotNumber} className="bg-white/10 rounded-lg p-3 border-2 border-luxe-gold/30">
+                            <div className="text-center mb-3">
+                              <h4 className="text-luxe-gold font-bold text-sm">Slot {slotNumber}</h4>
                             </div>
-                            <form onSubmit={(e) => {
-                              e.preventDefault();
-                              const formData = new FormData(e.target as HTMLFormElement);
-                              const quantity = parseInt(formData.get('quantity') as string);
-                              updateBottleStockMutation.mutate({ productId: product.id, bottleSize: '30ml', quantity });
-                            }} className="flex gap-2">
-                              <Input
-                                name="quantity"
-                                type="number"
-                                min="0"
-                                defaultValue={product.bottleStock30ml}
-                                className="bg-white/20 border-luxe-gold/30 text-white text-sm h-8"
-                                placeholder="Qty"
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="bg-luxe-gold hover:bg-yellow-600 text-charcoal h-8 px-3 text-xs"
-                                disabled={updateBottleStockMutation.isPending}
+                            
+                            <div className="space-y-2">
+                              {/* Fragrance Selection */}
+                              <select 
+                                className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full"
+                                defaultValue={productInSlot?.id || ""}
+                                onChange={(e) => {
+                                  const productId = parseInt(e.target.value);
+                                  if (productId) {
+                                    updateProductSlotMutation.mutate({ productId, slotType: 'bottle', slotNumber });
+                                  }
+                                }}
                               >
-                                Update
-                              </Button>
-                            </form>
-                          </div>
-
-                          {/* 60ml Bottles */}
-                          <div className="mb-4">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-300 text-sm">60ml Bottles</span>
-                              <span className="text-luxe-gold text-sm">{product.bottleStock60ml} units</span>
+                                <option value="">Select Fragrance</option>
+                                {products?.map(product => (
+                                  <option key={product.id} value={product.id} className="text-black">
+                                    {product.name}
+                                  </option>
+                                ))}
+                              </select>
+                              
+                              {/* Bottle Size Selection */}
+                              <select 
+                                className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full"
+                                defaultValue="30ml"
+                              >
+                                <option value="30ml" className="text-black">30ml Bottle</option>
+                                <option value="60ml" className="text-black">60ml Bottle</option>
+                                <option value="100ml" className="text-black">100ml Bottle</option>
+                              </select>
+                              
+                              {/* Stock Input */}
+                              <div className="space-y-1">
+                                <label className="text-xs text-gray-300">Stock:</label>
+                                <VirtualInput
+                                  type="number"
+                                  value="0"
+                                  onChange={(value: string) => {
+                                    // Stock will be managed per slot
+                                  }}
+                                  className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full h-6"
+                                  maxLength={3}
+                                />
+                              </div>
+                              
+                              {/* Current Assignment Display */}
+                              {productInSlot && (
+                                <div className="text-center py-2 bg-green-600/20 rounded">
+                                  <img
+                                    src={productInSlot.imageUrl}
+                                    alt={productInSlot.name}
+                                    className="w-8 h-8 object-cover rounded mx-auto mb-1"
+                                  />
+                                  <p className="text-white text-xs font-semibold">{productInSlot.name}</p>
+                                  <p className="text-gray-300 text-xs">Assigned</p>
+                                </div>
+                              )}
+                              
+                              {/* Action Buttons */}
+                              <div className="grid grid-cols-2 gap-1">
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                                  onClick={() => {
+                                    // Save slot assignment
+                                  }}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-red-600 hover:bg-red-700 text-white text-xs"
+                                  onClick={() => {
+                                    // Clear slot assignment
+                                  }}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
                             </div>
-                            <form onSubmit={(e) => {
-                              e.preventDefault();
-                              const formData = new FormData(e.target as HTMLFormElement);
-                              const quantity = parseInt(formData.get('quantity') as string);
-                              updateBottleStockMutation.mutate({ productId: product.id, bottleSize: '60ml', quantity });
-                            }} className="flex gap-2">
-                              <Input
-                                name="quantity"
-                                type="number"
-                                min="0"
-                                defaultValue={product.bottleStock60ml}
-                                className="bg-white/20 border-luxe-gold/30 text-white text-sm h-8"
-                                placeholder="Qty"
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="bg-luxe-gold hover:bg-yellow-600 text-charcoal h-8 px-3 text-xs"
-                                disabled={updateBottleStockMutation.isPending}
-                              >
-                                Update
-                              </Button>
-                            </form>
                           </div>
-
-                          {/* 100ml Bottles */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-300 text-sm">100ml Bottles</span>
-                              <span className="text-luxe-gold text-sm">{product.bottleStock100ml} units</span>
-                            </div>
-                            <form onSubmit={(e) => {
-                              e.preventDefault();
-                              const formData = new FormData(e.target as HTMLFormElement);
-                              const quantity = parseInt(formData.get('quantity') as string);
-                              updateBottleStockMutation.mutate({ productId: product.id, bottleSize: '100ml', quantity });
-                            }} className="flex gap-2">
-                              <Input
-                                name="quantity"
-                                type="number"
-                                min="0"
-                                defaultValue={product.bottleStock100ml}
-                                className="bg-white/20 border-luxe-gold/30 text-white text-sm h-8"
-                                placeholder="Qty"
-                              />
-                              <Button
-                                type="submit"
-                                size="sm"
-                                className="bg-luxe-gold hover:bg-yellow-600 text-charcoal h-8 px-3 text-xs"
-                                disabled={updateBottleStockMutation.isPending}
-                              >
-                                Update
-                              </Button>
-                            </form>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -626,37 +751,147 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                 <form onSubmit={handleUpdateProduct} className="space-y-4">
                   <div>
                     <Label htmlFor="edit-name">Product Name</Label>
-                    <Input
+                    <VirtualInput
                       id="edit-name"
+                      type="text"
                       value={editingProduct.name}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                      onChange={(value: string) => setEditingProduct({ ...editingProduct, name: value })}
+                      className="h-12 text-lg"
+                      maxLength={100}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="edit-price">Price (₹)</Label>
-                    <Input
-                      id="edit-price"
-                      type="number"
-                      value={Math.round(editingProduct.price / 100)}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) * 100 })}
-                    />
+                  {/* Pricing Section */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-charcoal font-semibold mb-3">Pricing Management</h4>
+                    
+                    <div>
+                      <Label htmlFor="edit-spray-price">Spray Price (₹)</Label>
+                      <VirtualInput
+                        id="edit-spray-price"
+                        type="number"
+                        value={Math.round(editingProduct.price / 100).toString()}
+                        onChange={(value: string) => setEditingProduct({ ...editingProduct, price: parseInt(value || '0') * 100 })}
+                        className="h-12 text-lg"
+                        maxLength={10}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label htmlFor="edit-price-30ml">30ml Bottle (₹)</Label>
+                        <VirtualInput
+                          id="edit-price-30ml"
+                          type="number"
+                          value={Math.round((editingProduct.price30ml || 2500) / 100).toString()}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price30ml: parseInt(value || '0') * 100 })}
+                          className="h-10 text-base"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-price-60ml">60ml Bottle (₹)</Label>
+                        <VirtualInput
+                          id="edit-price-60ml"
+                          type="number"
+                          value={Math.round((editingProduct.price60ml || 4500) / 100).toString()}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price60ml: parseInt(value || '0') * 100 })}
+                          className="h-10 text-base"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-price-100ml">100ml Bottle (₹)</Label>
+                        <VirtualInput
+                          id="edit-price-100ml"
+                          type="number"
+                          value={Math.round((editingProduct.price100ml || 6500) / 100).toString()}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price100ml: parseInt(value || '0') * 100 })}
+                          className="h-10 text-base"
+                          maxLength={10}
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="edit-description">Description</Label>
-                    <Textarea
+                    <VirtualInput
                       id="edit-description"
+                      type="textarea"
                       value={editingProduct.description}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                      onChange={(value: string) => setEditingProduct({ ...editingProduct, description: value })}
+                      className="min-h-20 text-lg"
+                      maxLength={500}
+                      rows={4}
                     />
                   </div>
                   <div>
                     <Label htmlFor="edit-imageUrl">Image URL</Label>
-                    <Input
+                    <VirtualInput
                       id="edit-imageUrl"
+                      type="text"
                       value={editingProduct.imageUrl}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, imageUrl: e.target.value })}
+                      onChange={(value: string) => setEditingProduct({ ...editingProduct, imageUrl: value })}
+                      className="h-12 text-lg"
+                      inputMode="url"
+                      maxLength={500}
                     />
                   </div>
+                  
+                  {/* Stock Management Section */}
+                  <div className="border-t pt-4">
+                    <h4 className="text-charcoal font-semibold mb-3">Stock Management</h4>
+                    
+                    {/* Spray Stock */}
+                    <div className="mb-4">
+                      <Label htmlFor="edit-spray-stock">Spray Stock</Label>
+                      <VirtualInput
+                        id="edit-spray-stock"
+                        type="number"
+                        value={editingProduct.sprayStock?.toString() || '0'}
+                        onChange={(value: string) => setEditingProduct({ ...editingProduct, sprayStock: parseInt(value || '0') })}
+                        className="h-10 text-base"
+                        maxLength={4}
+                      />
+                    </div>
+                    
+                    {/* Bottle Stock */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div>
+                        <Label htmlFor="edit-bottle-30ml">30ml Bottles</Label>
+                        <VirtualInput
+                          id="edit-bottle-30ml"
+                          type="number"
+                          value={editingProduct.bottleStock30ml?.toString() || '0'}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock30ml: parseInt(value || '0') })}
+                          className="h-10 text-base"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-bottle-60ml">60ml Bottles</Label>
+                        <VirtualInput
+                          id="edit-bottle-60ml"
+                          type="number"
+                          value={editingProduct.bottleStock60ml?.toString() || '0'}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock60ml: parseInt(value || '0') })}
+                          className="h-10 text-base"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-bottle-100ml">100ml Bottles</Label>
+                        <VirtualInput
+                          id="edit-bottle-100ml"
+                          type="number"
+                          value={editingProduct.bottleStock100ml?.toString() || '0'}
+                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock100ml: parseInt(value || '0') })}
+                          className="h-10 text-base"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={editingProduct.available}

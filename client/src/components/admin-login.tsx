@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import VirtualInputLogin from '@/components/ui/virtual-input-login';
 import { Label } from '@/components/ui/label';
 import { Lock, User, ArrowLeft } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
@@ -23,6 +23,9 @@ export default function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       const response = await apiRequest('POST', '/api/admin/login', credentials);
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -30,6 +33,7 @@ export default function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       onLogin();
     },
     onError: () => {
+      // Only show error on actual login failure, not during typing
       toast({
         title: "Login Failed",
         description: "Invalid username or password",
@@ -41,17 +45,15 @@ export default function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter both username and password",
-        variant: "destructive",
-      });
+    
+    // Only check if fields are empty, no other validation
+    if (!username.trim() || !password.trim()) {
+      // Silently prevent submission without showing error
       return;
     }
     
     setIsLoading(true);
-    loginMutation.mutate({ username, password });
+    loginMutation.mutate({ username: username.trim(), password: password.trim() });
   };
 
   return (
@@ -80,15 +82,15 @@ export default function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
                   Username
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                  <VirtualInputLogin
                     id="username"
-                    type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-luxe-gold focus:ring-luxe-gold"
+                    onChange={setUsername}
+                    className="pl-10 border-gray-300 focus:border-luxe-gold focus:ring-luxe-gold text-lg h-12"
                     placeholder="Enter username"
                     disabled={isLoading}
+                    maxLength={50}
                   />
                 </div>
               </div>
@@ -98,15 +100,16 @@ export default function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
+                  <VirtualInputLogin
                     id="password"
-                    type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-luxe-gold focus:ring-luxe-gold"
+                    onChange={setPassword}
+                    className="pl-10 border-gray-300 focus:border-luxe-gold focus:ring-luxe-gold text-lg h-12"
                     placeholder="Enter password"
                     disabled={isLoading}
+                    maxLength={50}
+
                   />
                 </div>
               </div>

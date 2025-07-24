@@ -16,10 +16,7 @@ declare global {
 }
 
 const paymentMethods: PaymentMethod[] = [
-  { id: 'razorpay', name: 'Razorpay (UPI/Cards/Wallets)', icon: 'credit-card' },
-  { id: 'card', name: 'Credit/Debit Card', icon: 'credit-card' },
-  { id: 'digital', name: 'Digital Wallet', icon: 'smartphone' },
-  { id: 'contactless', name: 'Contactless Pay', icon: 'wifi' },
+  { id: 'razorpay', name: 'Razorpay - All Payment Methods', icon: 'credit-card' },
 ];
 
 const getIcon = (iconName: string) => {
@@ -55,8 +52,13 @@ export default function PaymentModal({
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [razorpayConfig, setRazorpayConfig] = useState<any>(null);
 
-  // Load Razorpay configuration and script
+  // Auto-select Razorpay and load configuration
   useEffect(() => {
+    // Auto-select Razorpay since it's the only payment method
+    if (!selectedPaymentMethod) {
+      onSelectPaymentMethod('razorpay');
+    }
+
     const loadRazorpayConfig = async () => {
       try {
         const response = await apiRequest('GET', '/api/razorpay/config');
@@ -87,7 +89,7 @@ export default function PaymentModal({
     };
 
     loadRazorpayConfig();
-  }, []);
+  }, [selectedPaymentMethod, onSelectPaymentMethod]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
@@ -323,55 +325,84 @@ export default function PaymentModal({
             </div>
 
             {/* Payment Methods */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4 mb-6">
+              <div className="text-center">
+                <h3 className="font-semibold text-charcoal mb-2">Secure Payment by Razorpay</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Pay securely with any of these methods
+                </p>
+              </div>
+              
               {paymentMethods.map((method) => {
                 const IconComponent = getIcon(method.icon);
                 const isRazorpay = method.id === 'razorpay';
                 const showTestMode = isRazorpay && razorpayConfig?.testMode;
                 
                 return (
-                  <Button
-                    key={method.id}
-                    variant="outline"
-                    className={`w-full flex items-center justify-between p-4 h-auto touch-target transition-colors ${
-                      selectedPaymentMethod === method.id
-                        ? 'border-luxe-gold bg-yellow-50 text-charcoal'
-                        : 'border-gray-200 hover:border-luxe-gold'
-                    }`}
-                    onClick={() => onSelectPaymentMethod(method.id)}
-                  >
-                    <div className="flex items-center flex-1">
-                      <IconComponent className="text-luxe-gold mr-3 h-5 w-5" />
-                      <div className="text-left">
-                        <span className="font-medium block">{method.name}</span>
+                  <div key={method.id} className="border-2 border-luxe-gold bg-yellow-50 rounded-xl p-4">
+                    <div className="flex items-center mb-3">
+                      <IconComponent className="text-luxe-gold mr-3 h-6 w-6" />
+                      <div className="flex-1">
+                        <span className="font-semibold text-charcoal block">{method.name}</span>
                         {showTestMode && (
                           <span className="text-xs text-amber-600 font-medium">Test Mode Active</span>
                         )}
                       </div>
+                      <div className="text-green-600 font-semibold text-sm">✓ Selected</div>
                     </div>
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Button>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        UPI Payments
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Credit Cards
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Debit Cards
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Net Banking
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Digital Wallets
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        EMI Options
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
+              
+              <div className="text-center text-xs text-gray-500 mt-3">
+                🔒 Your payment information is encrypted and secure
+              </div>
             </div>
 
             <div className="flex space-x-3">
               <Button
                 variant="outline"
-                className="flex-1 touch-target"
+                className="flex-1 touch-target h-14 text-lg"
                 onClick={onCancel}
                 disabled={isProcessing}
               >
+                <X className="mr-2 h-5 w-5" />
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target"
+                className="flex-1 bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target h-14 text-lg font-semibold transition-all duration-300 transform hover:scale-105"
                 onClick={handleConfirmPayment}
-                disabled={!selectedPaymentMethod || isProcessing}
+                disabled={!selectedPaymentMethod || isProcessing || !razorpayLoaded}
               >
-                {isProcessing ? 'Processing...' : 'Pay Now'}
+                <CreditCard className="mr-2 h-5 w-5" />
+                {isProcessing ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Pay with Razorpay'}
               </Button>
             </div>
           </CardContent>

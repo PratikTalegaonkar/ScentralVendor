@@ -1,0 +1,155 @@
+pi@pi:~/ScentralVendor $ # First, let's check if Node.js is installed and where
+which node
+node --version
+
+# If Node.js isn't found, install it via the official repository
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify installation
+node --version
+npm --version
+
+# If that doesn't work, try installing via package manager
+sudo apt update
+sudo apt install -y nodejs npm
+
+# Check again
+npm --version
+bash: node: command not found
+2025-06-26 20:21:26 - Installing pre-requisites
+Hit:1 https://download.docker.com/linux/debian bookworm InRelease
+Hit:2 http://deb.debian.org/debian bookworm InRelease           
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]  
+Hit:5 http://archive.raspberrypi.com/debian bookworm InRelease             
+Fetched 103 kB in 6s (17.5 kB/s)                          
+Reading package lists... Done
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+ca-certificates is already the newest version (20230311+deb12u1).
+curl is already the newest version (7.88.1-10+deb12u12).
+gnupg is already the newest version (2.2.40-1.1).
+gnupg set to manually installed.
+The following NEW packages will be installed:
+  apt-transport-https
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 25.2 kB of archives.
+After this operation, 35.8 kB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main arm64 apt-transport-https all 2.6.1 [25.2 kB]
+Fetched 25.2 kB in 0s (303 kB/s)             
+Selecting previously unselected package apt-transport-https.
+(Reading database ... 59861 files and directories currently installed.)
+Preparing to unpack .../apt-transport-https_2.6.1_all.deb ...
+Unpacking apt-transport-https (2.6.1) ...
+Setting up apt-transport-https (2.6.1) ...
+Hit:1 https://download.docker.com/linux/debian bookworm InRelease
+Hit:2 http://deb.debian.org/debian bookworm InRelease
+Get:3 https://deb.nodesource.com/node_18.x nodistro InRelease [12.1 kB]
+Hit:4 http://deb.debian.org/debian-security bookworm-security InRelease
+Get:5 https://deb.nodesource.com/node_18.x nodistro/main arm64 Packages [11.4 kB]
+Hit:6 http://deb.debian.org/debian bookworm-updates InRelease                                 
+Hit:7 http://archive.raspberrypi.com/debian bookworm InRelease   
+Fetched 23.6 kB in 11s (2,162 B/s)                        
+Reading package lists... Done
+2025-06-26 20:21:47 - Repository configured successfully.
+2025-06-26 20:21:47 - To install Node.js, run: apt-get install nodejs -y
+2025-06-26 20:21:47 - You can use N|solid Runtime as a node.js alternative
+2025-06-26 20:21:47 - To install N|solid Runtime, run: apt-get install nsolid -y 
+
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following NEW packages will be installed:
+  nodejs
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 28.9 MB of archives.
+After this operation, 187 MB of additional disk space will be used.
+Get:1 https://deb.nodesource.com/node_18.x nodistro/main arm64 nodejs arm64 18.20.6-1nodesource1 [28.9 MB]
+Fetched 28.9 MB in 10s (2,783 kB/s)                                                                                                                                                    
+Selecting previously unselected package nodejs.
+(Reading database ... 59865 files and directories currently installed.)
+Preparing to unpack .../nodejs_18.20.6-1nodesource1_arm64.deb ...
+Unpacking nodejs (18.20.6-1nodesource1) ...
+Setting up nodejs (18.20.6-1nodesource1) ...
+Processing triggers for man-db (2.11.2-2) ...
+v18.20.6
+10.8.2
+Hit:1 http://deb.debian.org/debian bookworm InRelease
+Hit:2 https://download.docker.com/linux/debian bookworm InRelease                                                                  
+Hit:3 http://deb.debian.org/debian-security bookworm-security InRelease                                                            
+Hit:4 http://deb.debian.org/debian bookworm-updates InRelease                                          
+Hit:5 https://deb.nodesource.com/node_18.x nodistro InRelease                    
+Hit:6 http://archive.raspberrypi.com/debian bookworm InRelease                   
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+All packages are up to date.
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+nodejs is already the newest version (18.20.6-1nodesource1).
+Some packages could not be installed. This may mean that you have
+requested an impossible situation or if you are using the unstable
+distribution that some required packages have not yet been created
+or been moved out of Incoming.
+The following information may help to resolve the situation:
+
+The following packages have unmet dependencies:
+ eslint : Depends: nodejs:any (>= 12.22.0)
+          Recommends: node-js-yaml but it is not installable
+ libnode108 : Conflicts: nodejs-legacy
+ node-acorn : Depends: nodejs:any or
+                       nodejs (< 12.22.5~dfsg-4~)
+ node-ajv : Depends: nodejs:any
+ node-archy : Depends: nodejs:any
+ node-babel7 : Depends: nodejs:any
+ node-browserslist : Depends: nodejs:any
+ node-chalk : Depends: nodejs:any (>= 14)
+ node-css-selector-tokenizer : Depends: nodejs:any
+ node-decamelize : Depends: nodejs:any
+ node-defined : Depends: nodejs:any
+ node-doctrine : Depends: nodejs:any
+ node-errno : Depends: nodejs:any
+ node-es6-error : Depends: nodejs:any
+ node-escodegen : Depends: node-esprima but it is not installable
+                  Depends: nodejs:any
+ node-globby : Depends: nodejs:any
+ node-gyp : Depends: nodejs:any
+ node-ignore : Depends: nodejs:any
+ node-is-glob : Depends: nodejs:any
+ node-is-number : Depends: nodejs:any
+ node-is-path-inside : Depends: nodejs:any
+ node-istanbul : Depends: node-esprima but it is not installable
+                 Depends: node-js-yaml but it is not installable
+                 Depends: nodejs:any (>= 12)
+ node-jest-worker : Depends: node-types-node
+ node-json5 : Depends: nodejs:any
+ node-lodash : Depends: nodejs:any
+ node-mime : Depends: nodejs:any
+ node-mkdirp : Depends: nodejs:any
+ node-ms : Depends: nodejs:any
+ node-nopt : Depends: nodejs:any
+ node-normalize-path : Depends: nodejs:any
+ node-object-assign : Depends: nodejs:any
+ node-picocolors : Depends: nodejs:any
+ node-postcss : Depends: nodejs:any
+ node-progress : Depends: nodejs:any
+ node-punycode : Depends: nodejs:any
+ node-regjsparser : Depends: nodejs:any
+ node-rimraf : Depends: nodejs:any
+ node-semver : Depends: nodejs:any
+ node-strip-ansi : Depends: nodejs:any
+ node-tape : Depends: nodejs:any
+ node-unicode-match-property-ecmascript : Depends: nodejs:any
+ node-v8-compile-cache : Depends: nodejs:any (>= 14)
+ node-which : Depends: nodejs:any
+ node-write : Depends: nodejs:any
+ nodejs : Conflicts: npm
+ npm : Depends: nodejs:any
+       Recommends: node-tap but it is not installable
+ terser : Depends: nodejs:any
+ webpack : Depends: nodejs:any
+E: Unable to correct problems, you have held broken packages.
+10.8.2

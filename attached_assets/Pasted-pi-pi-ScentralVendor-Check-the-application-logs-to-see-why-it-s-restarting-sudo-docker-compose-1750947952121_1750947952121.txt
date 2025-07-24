@@ -1,0 +1,290 @@
+pi@pi:~/ScentralVendor $ # Check the application logs to see why it's restarting
+sudo docker compose logs app
+
+# If the logs are too long, get just the recent ones
+sudo docker compose logs --tail=20 app
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | npm notice
+scentra-app  | npm notice New major version of npm available! 10.8.2 -> 11.4.2
+scentra-app  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+scentra-app  | npm notice To update run: npm install -g npm@11.4.2
+scentra-app  | npm notice
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | 
+scentra-app  | > rest-express@1.0.0 start
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+scentra-app  | > NODE_ENV=production node dist/index.js
+scentra-app  | 
+scentra-app  | Razorpay Enabled: true Key ID: rzp_test_JC3STLbbaI4tzF
+scentra-app  | node:internal/errors:496
+scentra-app  |     ErrorCaptureStackTrace(err);
+scentra-app  |     ^
+scentra-app  | 
+scentra-app  | TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+scentra-app  |     at new NodeError (node:internal/errors:405:5)
+scentra-app  |     at validateString (node:internal/validators:162:11)
+scentra-app  |     at Object.resolve (node:path:1115:7)
+scentra-app  |     at file:///app/dist/index.js:660:17
+scentra-app  |     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+scentra-app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+scentra-app  |     at async loadESM (node:internal/process/esm_loader:34:7)
+scentra-app  |     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+scentra-app  |   code: 'ERR_INVALID_ARG_TYPE'
+scentra-app  | }
+scentra-app  | 
+scentra-app  | Node.js v18.20.8
+pi@pi:~/ScentralVendor $ # Check what's using port 5000
+sudo netstat -tulpn | grep :5000
+
+# Check if there are any other processes that might conflict
+ps aux | grep node
+
+# Also check disk space to make sure we're not running out
+df -h
+pi         25520  0.0  0.0   6240  1600 pts/0    S+   19:55   0:00 grep --color=auto node
+Filesystem      Size  Used Avail Use% Mounted on
+udev            3.9G     0  3.9G   0% /dev
+tmpfs           807M   15M  793M   2% /run
+/dev/mmcblk0p2  117G  4.0G  107G   4% /
+tmpfs           4.0G     0  4.0G   0% /dev/shm
+tmpfs           5.0M   48K  5.0M   1% /run/lock
+/dev/mmcblk0p1  510M   56M  455M  11% /boot/firmware
+tmpfs           807M     0  807M   0% /run/user/1000
+pi@pi:~/ScentralVendor $ 

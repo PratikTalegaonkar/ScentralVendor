@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Sparkles, Heart, CreditCard, Package } from "lucide-react";
 import { SelectedProduct } from "@/lib/types";
 import type { Product } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+// Declare Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface ThankYouScreenProps {
   product: SelectedProduct | null;
@@ -32,10 +41,46 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
   const [showPayment, setShowPayment] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [razorpayConfig, setRazorpayConfig] = useState<any>(null);
+  const { toast } = useToast();
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
+
+  // Load Razorpay configuration and script
+  useEffect(() => {
+    const loadRazorpayConfig = async () => {
+      try {
+        const response = await apiRequest('GET', '/api/razorpay/config');
+        const config = await response.json();
+        setRazorpayConfig(config);
+
+        // Load Razorpay script
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => setRazorpayLoaded(true);
+        script.onerror = () => {
+          console.log('Razorpay script failed to load');
+          setRazorpayLoaded(true);
+        };
+        document.body.appendChild(script);
+
+        return () => {
+          if (document.body.contains(script)) {
+            document.body.removeChild(script);
+          }
+        };
+      } catch (error) {
+        console.error('Failed to load Razorpay config:', error);
+        setRazorpayLoaded(true);
+      }
+    };
+
+    loadRazorpayConfig();
+  }, []);
 
   const handleBottleSelect = (productId: number, size: string) => {
     const key = `${productId}-${size}`;
@@ -56,13 +101,149 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
     }, 0);
   };
 
-  const handlePayment = async () => {
-    setPaymentProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
+  // Create order for bottles
+  const createBottleOrderMutation = useMutation({
+    mutationFn: async (bottleData: any) => {
+      const response = await apiRequest('POST', '/api/orders', bottleData);
+      return response.json();
+    },
+    onSuccess: (order) => {
+      processBottlePayment(order.id);
+    },
+    onError: () => {
+      toast({
+        title: "Order Error",
+        description: "Failed to create bottle order. Please try again.",
+        variant: "destructive",
+      });
+      setPaymentProcessing(false);
+    },
+  });
+
+  // Create Razorpay order for bottles
+  const createRazorpayBottleOrderMutation = useMutation({
+    mutationFn: async ({ amount, orderId }: { amount: number; orderId: number }) => {
+      const response = await apiRequest('POST', '/api/razorpay/order', {
+        amount: amount / 100,
+        orderId
+      });
+      return response.json();
+    },
+  });
+
+  // Verify Razorpay payment for bottles
+  const verifyBottlePaymentMutation = useMutation({
+    mutationFn: async (paymentData: any) => {
+      const response = await apiRequest('POST', '/api/razorpay/verify', paymentData);
+      return response.json();
+    },
+    onSuccess: () => {
       setPaymentProcessing(false);
       setPaymentComplete(true);
-    }, 3000);
+      toast({
+        title: "Payment Successful",
+        description: "Your bottle order has been confirmed!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Payment Verification Failed",
+        description: "Payment verification failed. Please contact support.",
+        variant: "destructive",
+      });
+      setPaymentProcessing(false);
+    },
+  });
+
+  const processBottlePayment = async (orderId: number) => {
+    if (!razorpayLoaded || !razorpayConfig) {
+      toast({
+        title: "Payment Error",
+        description: "Payment system is not ready. Please try again.",
+        variant: "destructive",
+      });
+      setPaymentProcessing(false);
+      return;
+    }
+
+    try {
+      const totalAmount = getTotalPrice();
+      const razorpayOrder = await createRazorpayBottleOrderMutation.mutateAsync({
+        amount: totalAmount,
+        orderId
+      });
+
+      const options = {
+        key: razorpayConfig.keyId,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: 'Scentra Vending - Bottles',
+        description: 'Premium Fragrance Bottles',
+        order_id: razorpayOrder.id,
+        handler: function (response: any) {
+          verifyBottlePaymentMutation.mutate({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            orderId: orderId
+          });
+        },
+        prefill: {
+          name: 'Customer',
+          email: 'customer@example.com',
+          contact: '9999999999'
+        },
+        theme: {
+          color: '#D4AF37'
+        },
+        modal: {
+          ondismiss: function() {
+            setPaymentProcessing(false);
+            toast({
+              title: "Payment Cancelled",
+              description: "Payment was cancelled by user.",
+              variant: "destructive",
+            });
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Razorpay payment error:', error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to initiate payment. Please try again.",
+        variant: "destructive",
+      });
+      setPaymentProcessing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    const selectedBottlesList = getSelectedBottles();
+    if (selectedBottlesList.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select at least one bottle to purchase.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPaymentProcessing(true);
+    
+    // Create a dummy order for bottles (you may want to create a proper bottle order system)
+    const firstProduct = products?.[0];
+    if (firstProduct) {
+      createBottleOrderMutation.mutate({
+        productId: firstProduct.id,
+        paymentMethod: 'razorpay',
+        amount: getTotalPrice(),
+        status: 'pending',
+      });
+    }
   };
 
   const formatPrice = (priceInCents: number) => {
@@ -194,22 +375,41 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                       const key = `${perfume.id}-${bottle.size}`;
                       const isSelected = selectedBottles[key] === bottle.size;
                       
+                      // Get stock for this bottle size
+                      const stockKey = bottle.size === '30ml' ? 'bottleStock30ml' : 
+                                     bottle.size === '60ml' ? 'bottleStock60ml' : 'bottleStock100ml';
+                      const stock = perfume[stockKey] || 0;
+                      const isOutOfStock = stock === 0;
+                      
                       return (
                         <Button
                           key={bottle.size}
-                          onClick={() => handleBottleSelect(perfume.id, bottle.size)}
+                          onClick={() => !isOutOfStock && handleBottleSelect(perfume.id, bottle.size)}
                           variant={isSelected ? "default" : "outline"}
                           size="sm"
-                          className={`w-full text-xs ${
-                            isSelected 
+                          disabled={isOutOfStock}
+                          className={`w-full text-xs h-12 touch-target ${
+                            isOutOfStock
+                              ? 'bg-gray-600/50 text-gray-400 border-gray-600 cursor-not-allowed'
+                              : isSelected 
                               ? 'bg-luxe-gold text-charcoal hover:bg-luxe-gold/90' 
                               : 'bg-white/10 text-white border-luxe-gold/30 hover:bg-luxe-gold/20'
                           }`}
                         >
                           <div className="flex justify-between items-center w-full">
-                            <span>{bottle.size}</span>
-                            <span>{formatPrice(bottle.price)}</span>
+                            <span>
+                              {bottle.size}
+                              {isOutOfStock && <span className="ml-1 text-red-400">(Out of Stock)</span>}
+                            </span>
+                            <span className={isOutOfStock ? 'line-through' : ''}>
+                              {formatPrice(bottle.price)}
+                            </span>
                           </div>
+                          {!isOutOfStock && stock <= 5 && (
+                            <div className="text-xs text-orange-300 mt-1">
+                              Only {stock} left
+                            </div>
+                          )}
                         </Button>
                       );
                     })}
@@ -261,41 +461,34 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                 </div>
               </div>
 
-              {!showPayment ? (
+              <div className="space-y-4">
+                <div className="text-center mb-4">
+                  <h4 className="text-white font-medium mb-2">Secure Payment by Razorpay</h4>
+                  <div className="text-sm text-platinum">
+                    UPI • Cards • Net Banking • Wallets • EMI
+                  </div>
+                </div>
+                
                 <Button
-                  onClick={() => setShowPayment(true)}
-                  className="w-full bg-luxe-gold hover:bg-luxe-gold/90 text-charcoal font-semibold py-3"
+                  onClick={handlePayment}
+                  disabled={paymentProcessing || !razorpayLoaded}
+                  className="w-full bg-luxe-gold hover:bg-luxe-gold/90 text-charcoal font-semibold py-6 text-xl touch-target transition-all duration-300 transform hover:scale-105"
                   size="lg"
                 >
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Proceed to Payment
+                  <CreditCard className="mr-2 h-6 w-6" />
+                  {paymentProcessing ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Pay with Razorpay'}
                 </Button>
-              ) : (
-                <div className="space-y-4">
-                  <h4 className="text-white font-medium text-center">Payment Portal</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      onClick={handlePayment}
-                      disabled={paymentProcessing}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {paymentProcessing ? "Processing..." : "Credit Card"}
-                    </Button>
-                    <Button
-                      onClick={handlePayment}
-                      disabled={paymentProcessing}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {paymentProcessing ? "Processing..." : "Contactless"}
-                    </Button>
+                
+                {paymentProcessing && (
+                  <div className="text-center text-platinum text-sm">
+                    Opening secure payment gateway...
                   </div>
-                  {paymentProcessing && (
-                    <div className="text-center text-platinum text-sm">
-                      Processing your payment...
-                    </div>
-                  )}
+                )}
+                
+                <div className="text-center text-xs text-platinum/70">
+                  🔒 Your payment information is encrypted and secure
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
