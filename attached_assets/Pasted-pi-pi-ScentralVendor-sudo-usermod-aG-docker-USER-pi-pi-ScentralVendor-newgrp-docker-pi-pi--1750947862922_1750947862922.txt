@@ -1,0 +1,103 @@
+pi@pi:~/ScentralVendor $ sudo usermod -aG docker $USER
+pi@pi:~/ScentralVendor $ newgrp docker
+pi@pi:~/ScentralVendor $ cd ~/ScentralVendor
+git stash
+git pull origin main
+Saved working directory and index state WIP on main: fc7c3a9 Redone previous commit
+From https://github.com/yashchavan1997/ScentralVendor
+ * branch            main       -> FETCH_HEAD
+Updating fc7c3a9..e37c4d6
+Fast-forward
+ Dockerfile                                                                                                |  44 +++-----
+ FRESH_RASPBERRY_PI_SETUP.md                                                                               | 321 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ ...-app-production-7-12-RUN-npm-ci-only-production-npm-cache-clean-force--1750776656532_1750776656532.txt |  34 ++++++
+ ...-sudo-apt-get-autoremove-y-sudo-apt-get-autoclean-sudo-journalctl-vacu-1750777264655_1750777264655.txt | 197 +++++++++++++++++++++++++++++++++
+ ...sudo-deploy-sh-Starting-Scentra-Vending-Machine-deployment-Building-ap-1750946612208_1750946612208.txt |  72 ++++++++++++
+ ...endor-Create-a-working-Dockerfile-that-includes-dev-dependencies-for-b-1750777899226_1750777899226.txt | 126 +++++++++++++++++++++
+ cleanup-and-deploy.sh                                                                                     |  82 ++++++++++++++
+ deploy-fixed.sh                                                                                           |  91 ++++++++++++++++
+ replit.md                                                                                                 |  16 ++-
+ update-dockerfile.sh                                                                                      |  67 ++++++++++++
+ 10 files changed, 1016 insertions(+), 34 deletions(-)
+ create mode 100644 FRESH_RASPBERRY_PI_SETUP.md
+ create mode 100644 attached_assets/Pasted--ERROR-app-production-7-12-RUN-npm-ci-only-production-npm-cache-clean-force--1750776656532_1750776656532.txt
+ create mode 100644 attached_assets/Pasted--First-free-up-disk-space-sudo-apt-get-autoremove-y-sudo-apt-get-autoclean-sudo-journalctl-vacu-1750777264655_1750777264655.txt
+ create mode 100644 attached_assets/Pasted-pi-pi-ScentralVendor-sudo-deploy-sh-Starting-Scentra-Vending-Machine-deployment-Building-ap-1750946612208_1750946612208.txt
+ create mode 100644 attached_assets/Pasted-pi-raspberrypi-ScentralVendor-Create-a-working-Dockerfile-that-includes-dev-dependencies-for-b-1750777899226_1750777899226.txt
+ create mode 100644 cleanup-and-deploy.sh
+ create mode 100644 deploy-fixed.sh
+ create mode 100644 update-dockerfile.sh
+pi@pi:~/ScentralVendor $ sed -i '/^version:/d' docker-compose.yml
+pi@pi:~/ScentralVendor $ sudo docker compose down
+sudo docker compose build --no-cache
+[+] Running 2/2
+ ✔ Container scentra-db            Removed                                                                                                                         0.4s 
+ ✔ Network scentralvendor_default  Removed                                                                                                                         0.3s 
+[+] Building 50.7s (15/15) FINISHED                                                                                                                                     
+ => [internal] load local bake definitions                                                                                                                         0.0s
+ => => reading from stdin 371B                                                                                                                                     0.0s
+ => [internal] load build definition from Dockerfile                                                                                                               0.0s
+ => => transferring dockerfile: 883B                                                                                                                               0.0s
+ => [internal] load metadata for docker.io/library/node:18-alpine                                                                                                  1.8s
+ => [internal] load .dockerignore                                                                                                                                  0.0s
+ => => transferring context: 2B                                                                                                                                    0.0s
+ => CACHED [1/8] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e                                     0.0s
+ => [internal] load build context                                                                                                                                  0.1s
+ => => transferring context: 104.62kB                                                                                                                              0.0s
+ => [2/8] RUN apk add --no-cache dumb-init                                                                                                                         2.0s
+ => [3/8] RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001                                                                                              0.4s 
+ => [4/8] WORKDIR /app                                                                                                                                             0.1s 
+ => [5/8] COPY package*.json ./                                                                                                                                    0.2s 
+ => [6/8] RUN npm ci && npm cache clean --force                                                                                                                   35.2s 
+ => [7/8] COPY --chown=nextjs:nodejs . .                                                                                                                           0.3s 
+ => [8/8] RUN npm run build                                                                                                                                        7.6s 
+ => exporting to image                                                                                                                                             2.7s 
+ => => exporting layers                                                                                                                                            2.7s 
+ => => writing image sha256:f0deb426f8ad927e4eb1cf6e47e51286410a6a2b3491e8ac258d8644a0fd94fb                                                                       0.0s 
+ => => naming to docker.io/library/scentralvendor-app                                                                                                              0.0s 
+ => resolving provenance for metadata file                                                                                                                         0.0s 
+[+] Building 1/1                                                                                                                                                        
+ ✔ app  Built                                                                                                                                                      0.0s 
+pi@pi:~/ScentralVendor $ sudo docker compose up -d postgres
+[+] Running 2/2
+ ✔ Network scentralvendor_default  Created                                                                                                                         0.1s 
+ ✔ Container scentra-db            Started                                                                                                                         0.4s 
+pi@pi:~/ScentralVendor $ sleep 20
+pi@pi:~/ScentralVendor $ sudo docker compose run --rm app npm run db:push
+[+] Creating 1/1
+ ✔ Container scentra-db  Running                                                                                                                                   0.0s 
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/app/drizzle.config.ts'
+Using 'pg' driver for database querying
+[✓] Pulling schema from database...
+[✓] Changes applied
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.4.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+npm notice To update run: npm install -g npm@11.4.2
+npm notice
+pi@pi:~/ScentralVendor $ sudo docker compose up -d
+[+] Running 2/2
+ ✔ Container scentra-db   Healthy                                                                                                                                  0.7s 
+ ✔ Container scentra-app  Started                                                                                                                                  0.9s 
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                        PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        9 seconds ago        Restarting (1) 1 second ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                         PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        27 seconds ago       Restarting (1) 6 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)    0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                          PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        49 seconds ago       Restarting (1) 14 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   About a minute ago   Up About a minute (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ sudo docker compose ps
+NAME          IMAGE                COMMAND                  SERVICE    CREATED              STATUS                         PORTS
+scentra-app   scentralvendor-app   "dumb-init -- npm st…"   app        About a minute ago   Restarting (1) 7 seconds ago   
+scentra-db    postgres:15-alpine   "docker-entrypoint.s…"   postgres   2 minutes ago        Up 2 minutes (healthy)         0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+pi@pi:~/ScentralVendor $ 

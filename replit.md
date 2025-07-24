@@ -102,6 +102,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+
 ### January 24, 2025 - Raspberry Pi Deployment Success
 - Successfully deployed Scentra vending machine on Raspberry Pi with Docker
 - Fixed Dockerfile to include drizzle-kit for database migrations
@@ -109,6 +110,36 @@ Preferred communication style: Simple, everyday language.
 - Created comprehensive fresh install guide for new Raspberry Pi setups
 - Optimized Docker configuration for ARM architecture
 - Application accessible at http://localhost:5000 with full functionality
+=======
+### January 24, 2025 - Real-time Inventory Heatmap & Size-Based Pricing System
+- Implemented comprehensive real-time inventory heatmap showing most popular fragrance slots
+- Added slotUsageStats database table to track usage patterns and popularity scores
+- Created HeatmapDisplay component with live visualization of slot popularity
+- Visual heat levels: cold (blue), warm (yellow), hot (orange), very hot (red)
+- Real-time analytics showing most popular fragrances, total usage, and active slots
+- Heat intensity visualization with glowing effects based on popularity scores
+- Automatic data refresh every 30 seconds with manual refresh capability
+- Time-since-last-use indicators for all slots (spray and bottle)
+- Trending slots analysis with usage count tracking
+- Color-coded slot popularity with percentage scoring
+- Enhanced slot management system with individual fragrance and size selection
+- Bottle slots now support any fragrance with specific size assignment (30ml, 60ml, 100ml)
+- Individual stock management for each of the 15 bottle slots
+- Backend API endpoints for usage tracking, heatmap data, and analytics
+- Added separate pricing for different bottle sizes (30ml, 60ml, 100ml) in product management
+- Enhanced product creation and editing forms with size-specific pricing controls
+- Updated database schema to support individual pricing for each bottle size
+- Product cards now display all pricing tiers for spray and bottle options
+
+### January 24, 2025 - Raspberry Pi Deployment Success & Node.js 20 Upgrade
+- Successfully resolved deployment issues by upgrading to Node.js 20.19.3
+- Fixed import.meta.dirname compatibility issues that caused application crashes
+- Confirmed working deployment with Razorpay payment integration
+- Application now running stably at http://localhost:5000 with full functionality
+- Created comprehensive fresh install guide for new Raspberry Pi setups
+- Database migrations and API endpoints responding correctly
+- Touch-optimized vending machine interface fully operational
+
 
 ### December 25, 2024 - Razorpay Integration & Docker Deployment
 - Configured Razorpay as exclusive payment processor with test credentials

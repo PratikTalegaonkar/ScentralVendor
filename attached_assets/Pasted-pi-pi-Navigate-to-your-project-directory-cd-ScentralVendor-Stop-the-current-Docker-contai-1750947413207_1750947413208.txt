@@ -1,0 +1,60 @@
+pi@pi:~ $ # Navigate to your project directory
+cd ~/ScentralVendor
+
+# Stop the current Docker containers
+docker compose down
+
+# Pull the latest changes from GitHub
+git pull origin main
+
+# If you have any local changes that conflict, you might need to:
+# git stash
+# git pull origin main
+# git stash pop
+
+# Rebuild with the updated files
+docker compose build --no-cache
+
+# Start the database
+docker compose up -d postgres
+
+# Wait for database to be ready
+sleep 20
+
+# Run database migrations
+docker compose run --rm app npm run db:push
+
+# Start all services
+docker compose up -d
+
+# Check status
+docker compose ps
+
+echo "✅ Update complete! Application running at http://localhost:5000"
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.50/containers/json?all=1&filters=%7B%22label%22%3A%7B%22com.docker.compose.config-hash%22%3Atrue%2C%22com.docker.compose.oneoff%3DFalse%22%3Atrue%2C%22com.docker.compose.project%3Dscentralvendor%22%3Atrue%7D%7D": dial unix /var/run/docker.sock: connect: permission denied
+remote: Enumerating objects: 17, done.
+remote: Counting objects: 100% (17/17), done.
+remote: Compressing objects: 100% (13/13), done.
+remote: Total 13 (delta 6), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (13/13), 14.13 KiB | 336.00 KiB/s, done.
+From https://github.com/yashchavan1997/ScentralVendor
+ * branch            main       -> FETCH_HEAD
+   fc7c3a9..e37c4d6  main       -> origin/main
+Updating fc7c3a9..e37c4d6
+error: Your local changes to the following files would be overwritten by merge:
+        Dockerfile
+Please commit your changes or stash them before you merge.
+Aborting
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Building 0.0s (0/0)                                                                                                            
+permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Head "http://%2Fvar%2Frun%2Fdocker.sock/_ping": dial unix /var/run/docker.sock: connect: permission denied
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+unable to get image 'postgres:15-alpine': permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.50/images/postgres:15-alpine/json": dial unix /var/run/docker.sock: connect: permission denied
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+unable to get image 'postgres:15-alpine': permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.50/images/postgres:15-alpine/json": dial unix /var/run/docker.sock: connect: permission denied
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+unable to get image 'postgres:15-alpine': permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.50/images/postgres:15-alpine/json": dial unix /var/run/docker.sock: connect: permission denied
+WARN[0000] /home/pi/ScentralVendor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.50/containers/json?filters=%7B%22label%22%3A%7B%22com.docker.compose.config-hash%22%3Atrue%2C%22com.docker.compose.oneoff%3DFalse%22%3Atrue%2C%22com.docker.compose.project%3Dscentralvendor%22%3Atrue%7D%7D": dial unix /var/run/docker.sock: connect: permission denied
+✅ Update complete! Application running at http://localhost:5000

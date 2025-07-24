@@ -375,22 +375,41 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                       const key = `${perfume.id}-${bottle.size}`;
                       const isSelected = selectedBottles[key] === bottle.size;
                       
+                      // Get stock for this bottle size
+                      const stockKey = bottle.size === '30ml' ? 'bottleStock30ml' : 
+                                     bottle.size === '60ml' ? 'bottleStock60ml' : 'bottleStock100ml';
+                      const stock = perfume[stockKey] || 0;
+                      const isOutOfStock = stock === 0;
+                      
                       return (
                         <Button
                           key={bottle.size}
-                          onClick={() => handleBottleSelect(perfume.id, bottle.size)}
+                          onClick={() => !isOutOfStock && handleBottleSelect(perfume.id, bottle.size)}
                           variant={isSelected ? "default" : "outline"}
                           size="sm"
-                          className={`w-full text-xs ${
-                            isSelected 
+                          disabled={isOutOfStock}
+                          className={`w-full text-xs h-12 touch-target ${
+                            isOutOfStock
+                              ? 'bg-gray-600/50 text-gray-400 border-gray-600 cursor-not-allowed'
+                              : isSelected 
                               ? 'bg-luxe-gold text-charcoal hover:bg-luxe-gold/90' 
                               : 'bg-white/10 text-white border-luxe-gold/30 hover:bg-luxe-gold/20'
                           }`}
                         >
                           <div className="flex justify-between items-center w-full">
-                            <span>{bottle.size}</span>
-                            <span>{formatPrice(bottle.price)}</span>
+                            <span>
+                              {bottle.size}
+                              {isOutOfStock && <span className="ml-1 text-red-400">(Out of Stock)</span>}
+                            </span>
+                            <span className={isOutOfStock ? 'line-through' : ''}>
+                              {formatPrice(bottle.price)}
+                            </span>
                           </div>
+                          {!isOutOfStock && stock <= 5 && (
+                            <div className="text-xs text-orange-300 mt-1">
+                              Only {stock} left
+                            </div>
+                          )}
                         </Button>
                       );
                     })}
@@ -453,10 +472,10 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                 <Button
                   onClick={handlePayment}
                   disabled={paymentProcessing || !razorpayLoaded}
-                  className="w-full bg-luxe-gold hover:bg-luxe-gold/90 text-charcoal font-semibold py-4 text-lg"
+                  className="w-full bg-luxe-gold hover:bg-luxe-gold/90 text-charcoal font-semibold py-6 text-xl touch-target transition-all duration-300 transform hover:scale-105"
                   size="lg"
                 >
-                  <CreditCard className="mr-2 h-5 w-5" />
+                  <CreditCard className="mr-2 h-6 w-6" />
                   {paymentProcessing ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Pay with Razorpay'}
                 </Button>
                 

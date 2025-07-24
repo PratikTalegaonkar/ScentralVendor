@@ -389,17 +389,19 @@ export default function PaymentModal({
             <div className="flex space-x-3">
               <Button
                 variant="outline"
-                className="flex-1 touch-target"
+                className="flex-1 touch-target h-14 text-lg"
                 onClick={onCancel}
                 disabled={isProcessing}
               >
+                <X className="mr-2 h-5 w-5" />
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target"
+                className="flex-1 bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target h-14 text-lg font-semibold transition-all duration-300 transform hover:scale-105"
                 onClick={handleConfirmPayment}
                 disabled={!selectedPaymentMethod || isProcessing || !razorpayLoaded}
               >
+                <CreditCard className="mr-2 h-5 w-5" />
                 {isProcessing ? 'Processing...' : !razorpayLoaded ? 'Loading...' : 'Pay with Razorpay'}
               </Button>
             </div>
