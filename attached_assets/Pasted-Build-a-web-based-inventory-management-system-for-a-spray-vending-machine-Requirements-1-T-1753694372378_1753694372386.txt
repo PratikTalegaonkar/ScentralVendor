@@ -1,0 +1,51 @@
+Build a web-based inventory management system for a spray vending machine.
+
+🟦 Requirements:
+1. The vending machine has:
+   - 5 spray test slots (customers pay to test)
+   - 15 bottle slots (3 size options for 5 perfume brands = 15 types)
+2. All UI and inventory should be managed on a **single page dashboard** with separate sections for:
+   - Spray Slot Management (5 slots)
+   - Bottle Slot Management (15 slots)
+
+🟩 Key Functionalities:
+A. **Product Configuration Section (top of page)**:
+   - Allow admin to add a new perfume product with the following inputs:
+     - Brand Name (text)
+     - Description (text)
+     - Spray Price (number)
+     - Bottle Prices (3 size options: Small, Medium, Large)
+   - On submission, the new product gets listed and is available to be assigned to a slot.
+
+B. **Spray Slot Management**:
+   - Display 5 Spray Slots (Slot 1 to 5) with dropdown to assign a perfume product.
+   - Show current product name and spray price.
+   - Show current stock (editable input).
+   - Buttons to increase/decrease stock manually.
+   - "Remove" button to clear the slot.
+
+C. **Bottle Slot Management**:
+   - Display 15 Bottle Slots labeled Slot 1 to 15.
+   - Each slot should:
+     - Allow selection of Brand
+     - Select bottle size (Small, Medium, Large)
+     - Display corresponding bottle price
+     - Stock quantity input
+     - Buttons to add/remove quantity
+     - "Clear slot" button
+
+D. **Product List & Slot Syncing**:
+   - Once a product is added in the config section, it should appear in dropdowns in both Spray and Bottle sections.
+   - If a product is removed from the product list, all slots using it should be reset automatically.
+
+E. **Persistent Storage**:
+   - Store inventory and product data in localStorage (for demo purposes, no backend required).
+   - Ensure state is retained across reloads.
+
+🛠 Tech Stack:
+- HTML, CSS, JavaScript (Vanilla or use React if preferred)
+- Optional: TailwindCSS for clean UI
+- No backend/database – use localStorage or browser memory for state management.
+
+💡 Refer to real vending UI systems like Vendekin or Vendify for layout ideas, with responsive and user-friendly design.
+
