@@ -37,6 +37,10 @@ export const orders = pgTable("orders", {
   paymentMethod: text("payment_method").notNull(),
   amount: integer("amount").notNull(), // Amount in cents
   status: text("status").notNull().default("pending"), // pending, completed, failed
+  bottleSize: text("bottle_size"), // For bottle orders - can store JSON or single size
+  orderType: text("order_type").notNull().default("spray"), // 'spray' or 'bottle'
+  quantity: integer("quantity").notNull().default(1), // Number of items ordered
+  slotNumber: integer("slot_number"), // Physical slot used for dispensing
   createdAt: text("created_at").notNull(),
 });
 
@@ -47,12 +51,55 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: text("created_at").notNull(),
 });
 
+// New flexible slot assignment system
+export const spraySlotAssignments = pgTable("spray_slot_assignments", {
+  id: serial("id").primaryKey(),
+  slotNumber: integer("slot_number").notNull(), // 1-5, multiple products can be assigned to same slot
+  productId: integer("product_id").notNull(), // Reference to products table
+  priority: integer("priority").notNull().default(0), // Higher priority = dispensed first
+});
+
+export const bottleSlotAssignments = pgTable("bottle_slot_assignments", {
+  id: serial("id").primaryKey(),
+  slotNumber: integer("slot_number").notNull(), // 1-15, multiple products can be assigned to same slot
+  productId: integer("product_id").notNull(), // Reference to products table
+  bottleSize: text("bottle_size", { enum: ['30ml', '60ml', '100ml'] }).notNull(),
+  priority: integer("priority").notNull().default(0), // Higher priority = dispensed first
+  slotQuantity: integer("slot_quantity").notNull().default(1), // Individual quantity per slot assignment
+});
+
+// Keep the old bottleSlots table for backward compatibility during migration
 export const bottleSlots = pgTable("bottle_slots", {
   id: serial("id").primaryKey(),
   slotNumber: integer("slot_number").notNull().unique(), // 1-15
   productId: integer("product_id"), // Reference to products table
   bottleSize: text("bottle_size", { enum: ['30ml', '60ml', '100ml'] }).notNull(),
   stock: integer("stock").notNull().default(0),
+});
+
+// Sales analytics and reporting tables
+export const salesSummary = pgTable("sales_summary", {
+  id: serial("id").primaryKey(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  totalRevenue: integer("total_revenue").notNull().default(0), // Total revenue in cents
+  totalOrders: integer("total_orders").notNull().default(0), // Total number of orders
+  sprayOrders: integer("spray_orders").notNull().default(0), // Number of spray orders
+  bottleOrders: integer("bottle_orders").notNull().default(0), // Number of bottle orders
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const productSales = pgTable("product_sales", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  sprayQuantity: integer("spray_quantity").notNull().default(0),
+  bottle30mlQuantity: integer("bottle_30ml_quantity").notNull().default(0),
+  bottle60mlQuantity: integer("bottle_60ml_quantity").notNull().default(0),
+  bottle100mlQuantity: integer("bottle_100ml_quantity").notNull().default(0),
+  totalRevenue: integer("total_revenue").notNull().default(0), // Revenue from this product in cents
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const slotUsageStats = pgTable("slot_usage_stats", {
@@ -106,3 +153,33 @@ export const insertSlotUsageStatsSchema = createInsertSchema(slotUsageStats).omi
 
 export type SlotUsageStats = typeof slotUsageStats.$inferSelect;
 export type InsertSlotUsageStats = z.infer<typeof insertSlotUsageStatsSchema>;
+
+// New flexible slot assignment schemas
+export const insertSpraySlotAssignmentSchema = createInsertSchema(spraySlotAssignments).omit({
+  id: true,
+});
+export type InsertSpraySlotAssignment = z.infer<typeof insertSpraySlotAssignmentSchema>;
+export type SpraySlotAssignment = typeof spraySlotAssignments.$inferSelect;
+
+export const insertBottleSlotAssignmentSchema = createInsertSchema(bottleSlotAssignments).omit({
+  id: true,
+});
+export type InsertBottleSlotAssignment = z.infer<typeof insertBottleSlotAssignmentSchema>;
+export type BottleSlotAssignment = typeof bottleSlotAssignments.$inferSelect;
+
+// Sales analytics schemas
+export const insertSalesSummarySchema = createInsertSchema(salesSummary).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSalesSummary = z.infer<typeof insertSalesSummarySchema>;
+export type SalesSummary = typeof salesSummary.$inferSelect;
+
+export const insertProductSalesSchema = createInsertSchema(productSales).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertProductSales = z.infer<typeof insertProductSalesSchema>;
+export type ProductSales = typeof productSales.$inferSelect;

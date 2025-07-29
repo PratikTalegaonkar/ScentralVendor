@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create order
+  // Create spray order
   app.post("/api/orders", async (req, res) => {
     try {
       const orderData = insertOrderSchema.parse(req.body);
@@ -60,11 +60,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Product out of stock" });
       }
       
-      // Create order
+      // Create order (stock will be decremented after successful payment)
       const order = await storage.createOrder(orderData);
-      
-      // Decrement spray stock by 1 for each order
-      await storage.decrementSprayStock(orderData.productId, 1);
       
       res.status(201).json(order);
     } catch (error) {
@@ -73,6 +70,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to create order" });
       }
+    }
+  });
+
+  // Create bottle order (single order for multiple bottles)
+  app.post("/api/bottle-orders", async (req, res) => {
+    try {
+      const { bottles, paymentMethod = 'razorpay' } = req.body;
+      
+      if (!bottles || !Array.isArray(bottles) || bottles.length === 0) {
+        return res.status(400).json({ message: "Bottles array is required" });
+      }
+      
+      let totalAmount = 0;
+      const bottleDetails = [];
+      
+      // Validate all bottles and calculate total
+      for (const bottle of bottles) {
+        const { productId, bottleSize } = bottle;
+        const product = await storage.getProduct(productId);
+        
+        if (!product) {
+          return res.status(404).json({ message: `Product ${productId} not found` });
+        }
+        
+        // Check stock for specific bottle size
+        let stock = 0;
+        let price = 0;
+        if (bottleSize === '30ml') {
+          stock = product.bottleStock30ml;
+          price = product.price30ml;
+        } else if (bottleSize === '60ml') {
+          stock = product.bottleStock60ml;
+          price = product.price60ml;
+        } else if (bottleSize === '100ml') {
+          stock = product.bottleStock100ml;
+          price = product.price100ml;
+        }
+        
+        if (stock < 1) {
+          return res.status(400).json({ message: `${product.name} ${bottleSize} is out of stock` });
+        }
+        
+        totalAmount += price;
+        bottleDetails.push({ productId, bottleSize, price });
+      }
+      
+      // Create a single order with bottle details stored
+      const orderData = {
+        productId: bottleDetails[0].productId, // Use first product for main reference
+        paymentMethod: 'bottle',
+        amount: totalAmount,
+        status: 'pending' as const,
+        bottleSize: JSON.stringify(bottleDetails) // Store all bottle details as JSON
+      };
+      
+      const order = await storage.createOrder(orderData);
+      
+      res.status(201).json({
+        order,
+        totalAmount,
+        bottleDetails,
+        message: "Bottle order created successfully"
+      });
+    } catch (error) {
+      console.error('Bottle order creation error:', error);
+      res.status(500).json({ message: "Failed to create bottle orders" });
     }
   });
 
@@ -132,10 +195,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (generated_signature === razorpay_signature) {
           const updatedOrder = await storage.updateOrderStatus(parseInt(orderId), "completed");
+          
+          // Decrement stock after successful payment
+          if (updatedOrder) {
+            if (updatedOrder.paymentMethod === 'bottle' && updatedOrder.bottleSize) {
+              try {
+                // Parse bottle details from JSON
+                const bottleDetails = JSON.parse(updatedOrder.bottleSize);
+                if (Array.isArray(bottleDetails)) {
+                  // Multiple bottles - decrement each
+                  for (const bottle of bottleDetails) {
+                    await storage.decrementBottleStock(bottle.productId, bottle.bottleSize as '30ml' | '60ml' | '100ml', 1);
+                  }
+                } else {
+                  // Single bottle - backward compatibility
+                  await storage.decrementBottleStock(updatedOrder.productId, updatedOrder.bottleSize as '30ml' | '60ml' | '100ml', 1);
+                }
+              } catch (error) {
+                // Fallback for non-JSON bottle size (backward compatibility)
+                await storage.decrementBottleStock(updatedOrder.productId, updatedOrder.bottleSize as '30ml' | '60ml' | '100ml', 1);
+              }
+            } else {
+              // Decrement spray stock
+              await storage.decrementSprayStock(updatedOrder.productId, 1);
+            }
+          }
+          
           res.json({
             success: true,
             order: updatedOrder,
-            message: "Payment verified successfully"
+            message: "Payment verified successfully",
+            stockUpdated: true // Signal that stock was updated
           });
         } else {
           res.status(400).json({
@@ -148,10 +238,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing delay
         const updatedOrder = await storage.updateOrderStatus(parseInt(orderId), "completed");
         
+        // Decrement stock after successful payment
+        if (updatedOrder) {
+          if (updatedOrder.paymentMethod === 'bottle' && updatedOrder.bottleSize) {
+            try {
+              // Parse bottle details from JSON
+              const bottleDetails = JSON.parse(updatedOrder.bottleSize);
+              if (Array.isArray(bottleDetails)) {
+                // Multiple bottles - decrement each
+                for (const bottle of bottleDetails) {
+                  await storage.decrementBottleStock(bottle.productId, bottle.bottleSize as '30ml' | '60ml' | '100ml', 1);
+                }
+              } else {
+                // Single bottle - backward compatibility
+                await storage.decrementBottleStock(updatedOrder.productId, updatedOrder.bottleSize as '30ml' | '60ml' | '100ml', 1);
+              }
+            } catch (error) {
+              // Fallback for non-JSON bottle size (backward compatibility)
+              await storage.decrementBottleStock(updatedOrder.productId, updatedOrder.bottleSize as '30ml' | '60ml' | '100ml', 1);
+            }
+          } else {
+            // Decrement spray stock
+            await storage.decrementSprayStock(updatedOrder.productId, 1);
+          }
+        }
+        
         res.json({
           success: true,
           order: updatedOrder,
-          message: "Payment verified successfully (Test Mode)"
+          message: "Payment verified successfully (Test Mode)",
+          stockUpdated: true // Signal that stock was updated
         });
       }
     } catch (error) {
@@ -432,8 +548,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Product ID and valid bottle size required' });
       }
       
-      const slot = await storage.assignBottleSlot(slotNumber, productId, bottleSize);
-      res.json(slot);
+      // First, clear any existing product from this slot
+      await storage.clearBottleSlot(slotNumber);
+      
+      // Then assign the new product to this slot
+      const updatedProduct = await storage.updateProductSlot(productId, 'bottle', slotNumber);
+      if (!updatedProduct) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      
+      res.json(updatedProduct);
     } catch (error) {
       console.error('Error assigning bottle slot:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -464,7 +588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/bottle-slots/:slotNumber', authenticateAdmin, async (req, res) => {
     try {
       const slotNumber = parseInt(req.params.slotNumber);
-      const removed = await storage.removeBottleSlotAssignment(slotNumber);
+      await storage.clearBottleSlot(slotNumber);
+      const removed = true;
       
       if (!removed) {
         return res.status(404).json({ message: 'Slot not found' });
@@ -511,6 +636,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error recording usage:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // New flexible slot assignment API routes
+  
+  // Assign product to spray slot
+  app.post("/api/admin/slots/spray/:slotNumber/assign", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const { productId, priority = 0 } = req.body;
+      
+      if (!productId || slotNumber < 1 || slotNumber > 5) {
+        return res.status(400).json({ message: "Invalid slot number or product ID" });
+      }
+      
+      await storage.assignProductToSpraySlot(productId, slotNumber, priority);
+      res.json({ message: "Product assigned to spray slot successfully" });
+    } catch (error) {
+      console.error("Spray slot assignment error:", error);
+      res.status(500).json({ message: "Failed to assign product to spray slot" });
+    }
+  });
+
+  // Assign product to bottle slot
+  app.post("/api/admin/slots/bottle/:slotNumber/assign", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const { productId, bottleSize, priority = 0, slotQuantity = 1 } = req.body;
+      
+      if (!productId || !bottleSize || slotNumber < 1 || slotNumber > 15) {
+        return res.status(400).json({ message: "Invalid slot number, product ID, or bottle size" });
+      }
+      
+      if (!['30ml', '60ml', '100ml'].includes(bottleSize)) {
+        return res.status(400).json({ message: "Invalid bottle size" });
+      }
+
+      if (slotQuantity < 1 || slotQuantity > 20) {
+        return res.status(400).json({ message: "Slot quantity must be between 1 and 20" });
+      }
+      
+      await storage.assignProductToBottleSlot(productId, slotNumber, bottleSize, priority, slotQuantity);
+      res.json({ message: "Product assigned to bottle slot successfully" });
+    } catch (error) {
+      console.error("Bottle slot assignment error:", error);
+      // Return specific error message if it's an inventory validation error
+      const errorMessage = error instanceof Error ? error.message : "Failed to assign product to bottle slot";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Get available quantity for a product variant
+  app.get("/api/admin/products/:productId/available-quantity/:bottleSize", authenticateAdmin, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const bottleSize = req.params.bottleSize as '30ml' | '60ml' | '100ml';
+      
+      if (!['30ml', '60ml', '100ml'].includes(bottleSize)) {
+        return res.status(400).json({ message: "Invalid bottle size" });
+      }
+      
+      const availableQuantity = await storage.getAvailableQuantityForProduct(productId, bottleSize);
+      res.json({ availableQuantity });
+    } catch (error) {
+      console.error("Available quantity error:", error);
+      res.status(500).json({ message: "Failed to get available quantity" });
+    }
+  });
+
+  // Remove product from spray slot
+  app.delete("/api/admin/slots/spray/:slotNumber/product/:productId", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const productId = parseInt(req.params.productId);
+      
+      await storage.removeProductFromSpraySlot(productId, slotNumber);
+      res.json({ message: "Product removed from spray slot successfully" });
+    } catch (error) {
+      console.error("Remove spray slot error:", error);
+      res.status(500).json({ message: "Failed to remove product from spray slot" });
+    }
+  });
+
+  // Remove product from bottle slot
+  app.delete("/api/admin/slots/bottle/:slotNumber/product/:productId", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const productId = parseInt(req.params.productId);
+      const { bottleSize } = req.body;
+      
+      // If bottleSize not provided in body, try to get it from the current product assignment
+      if (!bottleSize) {
+        const product = await storage.getProduct(productId);
+        if (product && product.bottleSlot === slotNumber) {
+          bottleSize = product.bottleSize;
+        }
+      }
+      
+      if (!bottleSize || !['30ml', '60ml', '100ml'].includes(bottleSize)) {
+        return res.status(400).json({ message: "Invalid bottle size or bottle size not found" });
+      }
+      
+      await storage.removeProductFromBottleSlot(productId, slotNumber, bottleSize);
+      res.json({ message: "Product removed from bottle slot successfully" });
+    } catch (error) {
+      console.error("Bottle slot removal error:", error);
+      res.status(500).json({ message: "Failed to remove product from bottle slot" });
+    }
+  });
+
+  // Get products in a specific spray slot
+  app.get("/api/admin/slots/spray/:slotNumber/products", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const products = await storage.getProductsInSpraySlot(slotNumber);
+      res.json(products);
+    } catch (error) {
+      console.error("Get spray slot products error:", error);
+      res.status(500).json({ message: "Failed to get products in spray slot" });
+    }
+  });
+
+  // Get products in a specific bottle slot
+  app.get("/api/admin/slots/bottle/:slotNumber/products", authenticateAdmin, async (req, res) => {
+    try {
+      const slotNumber = parseInt(req.params.slotNumber);
+      const products = await storage.getProductsInBottleSlot(slotNumber);
+      res.json(products || []);
+    } catch (error) {
+      console.error("Get bottle slot products error:", error);
+      res.status(500).json({ message: "Failed to get products in bottle slot", error: error.message });
+    }
+  });
+
+  // Get all slot assignments for a product
+  app.get("/api/admin/products/:productId/slots", authenticateAdmin, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const assignments = await storage.getAssignedSlotsForProduct(productId);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Get product slots error:", error);
+      res.status(500).json({ message: "Failed to get product slot assignments" });
     }
   });
 
