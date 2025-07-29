@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import VirtualKeyboard from './virtual-keyboard';
+import SimpleKeyboard from './simple-keyboard';
 
 interface VirtualInputLoginProps {
   id?: string;
@@ -70,16 +70,18 @@ export default function VirtualInputLogin({
         tabIndex={-1}
       />
 
-      {/* Virtual Keyboard */}
+      {/* Simple Keyboard */}
       {showKeyboard && (
-        <VirtualKeyboard
-          value={value}
-          onChange={handleKeyboardChange}
+        <SimpleKeyboard
+          onConfirm={(text) => {
+            onChange(text);
+            setShowKeyboard(false);
+          }}
           onClose={handleKeyboardClose}
+          initialValue={value}
           placeholder={placeholder}
+          title="Enter Text"
           maxLength={maxLength}
-          title={placeholder || 'Enter Text'}
-          multiline={false}
         />
       )}
     </div>

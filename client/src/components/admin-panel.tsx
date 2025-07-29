@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Package, Database, Plus, Edit3, Trash2, RefreshCw } from 'lucide-react';
 import HeatmapDisplay from './heatmap-display';
+import BottleSlotManager from './bottle-slot-manager';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import type { Product, Order } from '@shared/schema';
@@ -30,6 +31,9 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
     available: true
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState<any>(null);
+  const [isManualEdit, setIsManualEdit] = useState(false);
+  const [sprayStockValues, setSprayStockValues] = useState<{[key: number]: string}>({});
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -38,12 +42,14 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
     queryKey: ['/api/admin/products'],
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    refetchInterval: 5000, // Refresh every 5 seconds to catch updates
   });
 
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useQuery<Order[]>({
     queryKey: ['/api/admin/orders'],
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    refetchInterval: 5000, // Refresh every 5 seconds to catch updates
   });
 
   const createProductMutation = useMutation({
@@ -80,8 +86,13 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
         description: "Product updated successfully",
       });
       setEditingProduct(null);
+      setEditFormData(null);
+      setIsManualEdit(false);
+      // Invalidate all related caches
       queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/heatmap'] });
     },
     onError: () => {
       toast({
@@ -102,8 +113,11 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
         title: "Success",
         description: "Product deleted successfully",
       });
+      // Invalidate all related caches
       queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/heatmap'] });
     },
     onError: () => {
       toast({
@@ -207,16 +221,34 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
     });
   };
 
+  const startEditing = (product: Product) => {
+    setEditFormData({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      imageUrl: product.imageUrl,
+      price: product.price,
+      price30ml: product.price30ml || 2500,
+      price60ml: product.price60ml || 4500, 
+      price100ml: product.price100ml || 6500,
+      sprayStock: product.sprayStock,
+      bottleStock30ml: product.bottleStock30ml,
+      bottleStock60ml: product.bottleStock60ml,
+      bottleStock100ml: product.bottleStock100ml,
+      available: product.available
+    });
+    setEditingProduct(product);
+    setIsManualEdit(true);
+  };
+
   const handleUpdateProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct) return;
+    if (!editFormData) return;
 
+    // Only allow updates when explicitly clicked, not on every keystroke
     updateProductMutation.mutate({
-      id: editingProduct.id,
-      data: {
-        ...editingProduct,
-        price: editingProduct.price
-      }
+      id: editFormData.id,
+      data: editFormData
     });
   };
 
@@ -234,7 +266,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-charcoal via-gray-900 to-black p-8 overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-br from-charcoal via-gray-900 to-black overflow-y-auto">
+      <div className="p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -445,7 +478,7 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                               size="sm"
                               variant="outline"
                               className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                              onClick={() => setEditingProduct(product)}
+                              onClick={() => startEditing(product)}
                             >
                               <Edit3 className="h-3 w-3" />
                             </Button>
@@ -502,9 +535,13 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                               <div className="space-y-3">
                                 <div className="text-center">
                                   <img
-                                    src={productInSlot.imageUrl}
+                                    src={productInSlot.imageUrl || 'https://via.placeholder.com/64x64/374151/9CA3AF?text=No+Image'}
                                     alt={productInSlot.name}
                                     className="w-16 h-16 object-cover rounded mx-auto mb-2"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = 'https://via.placeholder.com/64x64/374151/9CA3AF?text=No+Image';
+                                    }}
                                   />
                                   <h5 className="text-white font-semibold text-sm">{productInSlot.name}</h5>
                                   <p className="text-gray-400 text-xs">Stock: {productInSlot.sprayStock}</p>
@@ -520,21 +557,24 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                                 
                                 <form onSubmit={(e) => {
                                   e.preventDefault();
-                                  const formData = new FormData(e.target as HTMLFormElement);
-                                  const quantity = parseInt(formData.get('sprayStock') as string);
-                                  updateSprayStockMutation.mutate({ productId: productInSlot.id, quantity });
+                                  const quantity = parseInt(sprayStockValues[productInSlot.id] || productInSlot.sprayStock.toString());
+                                  if (!isNaN(quantity)) {
+                                    updateSprayStockMutation.mutate({ productId: productInSlot.id, quantity });
+                                  }
                                 }} className="space-y-2">
                                   <VirtualInputLogin
-                                    value={productInSlot.sprayStock.toString()}
+                                    value={sprayStockValues[productInSlot.id] || productInSlot.sprayStock.toString()}
                                     onChange={(value) => {
-                                      const input = document.querySelector(`input[data-product-id="spray-${productInSlot.id}"]`) as HTMLInputElement;
-                                      if (input) input.value = value;
+                                      // Only update local state, no auto-submit
+                                      setSprayStockValues(prev => ({
+                                        ...prev,
+                                        [productInSlot.id]: value
+                                      }));
                                     }}
                                     className="bg-white/20 border-luxe-gold/30 text-white text-sm h-8 w-full"
                                     placeholder="Stock"
                                     maxLength={4}
                                   />
-                                  <input type="hidden" name="sprayStock" data-product-id={`spray-${productInSlot.id}`} defaultValue={productInSlot.sprayStock} />
                                   <Button
                                     type="submit"
                                     size="sm"
@@ -592,99 +632,31 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       <p className="text-platinum">Loading inventory...</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {Array.from({ length: 15 }, (_, slotIndex) => {
-                        const slotNumber = slotIndex + 1;
-                        const productInSlot = products?.find(p => p.bottleSlot === slotNumber);
-                        
-                        return (
-                          <div key={slotNumber} className="bg-white/10 rounded-lg p-3 border-2 border-luxe-gold/30">
-                            <div className="text-center mb-3">
-                              <h4 className="text-luxe-gold font-bold text-sm">Slot {slotNumber}</h4>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              {/* Fragrance Selection */}
-                              <select 
-                                className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full"
-                                defaultValue={productInSlot?.id || ""}
-                                onChange={(e) => {
-                                  const productId = parseInt(e.target.value);
-                                  if (productId) {
-                                    updateProductSlotMutation.mutate({ productId, slotType: 'bottle', slotNumber });
-                                  }
+                    <div className="max-h-[600px] overflow-y-auto pr-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {Array.from({ length: 15 }, (_, slotIndex) => {
+                          const slotNumber = slotIndex + 1;
+                          const productInSlot = products?.find(p => p.bottleSlot === slotNumber);
+                          
+                          return (
+                            <div key={slotNumber} className="bg-white/10 rounded-lg p-3 border-2 border-luxe-gold/30">
+                              <div className="text-center mb-3">
+                                <h4 className="text-luxe-gold font-bold text-sm">Slot {slotNumber}</h4>
+                              </div>
+                              
+                              <BottleSlotManager 
+                                slotNumber={slotNumber}
+                                products={products || []}
+                                productInSlot={productInSlot}
+                                onSlotUpdate={() => {
+                                  // Refresh products data
+                                  refetchProducts();
                                 }}
-                              >
-                                <option value="">Select Fragrance</option>
-                                {products?.map(product => (
-                                  <option key={product.id} value={product.id} className="text-black">
-                                    {product.name}
-                                  </option>
-                                ))}
-                              </select>
-                              
-                              {/* Bottle Size Selection */}
-                              <select 
-                                className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full"
-                                defaultValue="30ml"
-                              >
-                                <option value="30ml" className="text-black">30ml Bottle</option>
-                                <option value="60ml" className="text-black">60ml Bottle</option>
-                                <option value="100ml" className="text-black">100ml Bottle</option>
-                              </select>
-                              
-                              {/* Stock Input */}
-                              <div className="space-y-1">
-                                <label className="text-xs text-gray-300">Stock:</label>
-                                <VirtualInput
-                                  type="number"
-                                  value="0"
-                                  onChange={(value: string) => {
-                                    // Stock will be managed per slot
-                                  }}
-                                  className="bg-white/20 border-luxe-gold/30 text-white text-xs rounded px-1 py-1 w-full h-6"
-                                  maxLength={3}
-                                />
-                              </div>
-                              
-                              {/* Current Assignment Display */}
-                              {productInSlot && (
-                                <div className="text-center py-2 bg-green-600/20 rounded">
-                                  <img
-                                    src={productInSlot.imageUrl}
-                                    alt={productInSlot.name}
-                                    className="w-8 h-8 object-cover rounded mx-auto mb-1"
-                                  />
-                                  <p className="text-white text-xs font-semibold">{productInSlot.name}</p>
-                                  <p className="text-gray-300 text-xs">Assigned</p>
-                                </div>
-                              )}
-                              
-                              {/* Action Buttons */}
-                              <div className="grid grid-cols-2 gap-1">
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white text-xs"
-                                  onClick={() => {
-                                    // Save slot assignment
-                                  }}
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-red-600 hover:bg-red-700 text-white text-xs"
-                                  onClick={() => {
-                                    // Clear slot assignment
-                                  }}
-                                >
-                                  Clear
-                                </Button>
-                              </div>
+                              />
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -741,21 +713,21 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
         </Tabs>
 
         {/* Edit Product Modal */}
-        {editingProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <Card className="bg-white/95 backdrop-blur-sm w-full max-w-md">
+        {editingProduct && editFormData && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-40 flex items-start justify-center p-4 overflow-y-auto">
+            <Card className="bg-white/95 backdrop-blur-sm w-full max-w-md my-8 max-h-[90vh] overflow-y-auto">
               <CardHeader>
                 <CardTitle className="text-charcoal">Edit Product</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleUpdateProduct} className="space-y-4">
+                <div className="space-y-4">
                   <div>
                     <Label htmlFor="edit-name">Product Name</Label>
                     <VirtualInput
                       id="edit-name"
                       type="text"
-                      value={editingProduct.name}
-                      onChange={(value: string) => setEditingProduct({ ...editingProduct, name: value })}
+                      value={editFormData.name}
+                      onChange={(value: string) => setEditFormData({ ...editFormData, name: value })}
                       className="h-12 text-lg"
                       maxLength={100}
                     />
@@ -769,8 +741,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       <VirtualInput
                         id="edit-spray-price"
                         type="number"
-                        value={Math.round(editingProduct.price / 100).toString()}
-                        onChange={(value: string) => setEditingProduct({ ...editingProduct, price: parseInt(value || '0') * 100 })}
+                        value={Math.round(editFormData.price / 100).toString()}
+                        onChange={(value: string) => setEditFormData({ ...editFormData, price: parseInt(value || '0') * 100 })}
                         className="h-12 text-lg"
                         maxLength={10}
                       />
@@ -782,8 +754,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-price-30ml"
                           type="number"
-                          value={Math.round((editingProduct.price30ml || 2500) / 100).toString()}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price30ml: parseInt(value || '0') * 100 })}
+                          value={Math.round((editFormData.price30ml || 2500) / 100).toString()}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, price30ml: parseInt(value || '0') * 100 })}
                           className="h-10 text-base"
                           maxLength={10}
                         />
@@ -793,8 +765,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-price-60ml"
                           type="number"
-                          value={Math.round((editingProduct.price60ml || 4500) / 100).toString()}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price60ml: parseInt(value || '0') * 100 })}
+                          value={Math.round((editFormData.price60ml || 4500) / 100).toString()}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, price60ml: parseInt(value || '0') * 100 })}
                           className="h-10 text-base"
                           maxLength={10}
                         />
@@ -804,8 +776,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-price-100ml"
                           type="number"
-                          value={Math.round((editingProduct.price100ml || 6500) / 100).toString()}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, price100ml: parseInt(value || '0') * 100 })}
+                          value={Math.round((editFormData.price100ml || 6500) / 100).toString()}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, price100ml: parseInt(value || '0') * 100 })}
                           className="h-10 text-base"
                           maxLength={10}
                         />
@@ -817,8 +789,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                     <VirtualInput
                       id="edit-description"
                       type="textarea"
-                      value={editingProduct.description}
-                      onChange={(value: string) => setEditingProduct({ ...editingProduct, description: value })}
+                      value={editFormData.description}
+                      onChange={(value: string) => setEditFormData({ ...editFormData, description: value })}
                       className="min-h-20 text-lg"
                       maxLength={500}
                       rows={4}
@@ -829,8 +801,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                     <VirtualInput
                       id="edit-imageUrl"
                       type="text"
-                      value={editingProduct.imageUrl}
-                      onChange={(value: string) => setEditingProduct({ ...editingProduct, imageUrl: value })}
+                      value={editFormData.imageUrl}
+                      onChange={(value: string) => setEditFormData({ ...editFormData, imageUrl: value })}
                       className="h-12 text-lg"
                       inputMode="url"
                       maxLength={500}
@@ -847,8 +819,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       <VirtualInput
                         id="edit-spray-stock"
                         type="number"
-                        value={editingProduct.sprayStock?.toString() || '0'}
-                        onChange={(value: string) => setEditingProduct({ ...editingProduct, sprayStock: parseInt(value || '0') })}
+                        value={editFormData.sprayStock?.toString() || '0'}
+                        onChange={(value: string) => setEditFormData({ ...editFormData, sprayStock: parseInt(value || '0') })}
                         className="h-10 text-base"
                         maxLength={4}
                       />
@@ -861,8 +833,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-bottle-30ml"
                           type="number"
-                          value={editingProduct.bottleStock30ml?.toString() || '0'}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock30ml: parseInt(value || '0') })}
+                          value={editFormData.bottleStock30ml?.toString() || '0'}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, bottleStock30ml: parseInt(value || '0') })}
                           className="h-10 text-base"
                           maxLength={4}
                         />
@@ -872,8 +844,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-bottle-60ml"
                           type="number"
-                          value={editingProduct.bottleStock60ml?.toString() || '0'}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock60ml: parseInt(value || '0') })}
+                          value={editFormData.bottleStock60ml?.toString() || '0'}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, bottleStock60ml: parseInt(value || '0') })}
                           className="h-10 text-base"
                           maxLength={4}
                         />
@@ -883,8 +855,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                         <VirtualInput
                           id="edit-bottle-100ml"
                           type="number"
-                          value={editingProduct.bottleStock100ml?.toString() || '0'}
-                          onChange={(value: string) => setEditingProduct({ ...editingProduct, bottleStock100ml: parseInt(value || '0') })}
+                          value={editFormData.bottleStock100ml?.toString() || '0'}
+                          onChange={(value: string) => setEditFormData({ ...editFormData, bottleStock100ml: parseInt(value || '0') })}
                           className="h-10 text-base"
                           maxLength={4}
                         />
@@ -894,8 +866,8 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
 
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={editingProduct.available}
-                      onCheckedChange={(checked) => setEditingProduct({ ...editingProduct, available: checked })}
+                      checked={editFormData.available}
+                      onCheckedChange={(checked) => setEditFormData({ ...editFormData, available: checked })}
                     />
                     <Label>Available for purchase</Label>
                   </div>
@@ -904,24 +876,28 @@ export default function AdminPanel({ onLogout }: AdminPanelProps) {
                       type="button"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => setEditingProduct(null)}
+                      onClick={() => {
+                        setEditingProduct(null);
+                        setEditFormData(null);
+                      }}
                     >
                       Cancel
                     </Button>
                     <Button
-                      type="submit"
+                      onClick={(e) => handleUpdateProduct(e)}
                       className="flex-1 bg-luxe-gold hover:bg-yellow-600 text-charcoal"
                       disabled={updateProductMutation.isPending}
                     >
                       {updateProductMutation.isPending ? 'Updating...' : 'Update'}
                     </Button>
                   </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
           </div>
         )}
       </motion.div>
+      </div>
     </div>
   );
 }

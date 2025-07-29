@@ -20,9 +20,22 @@ export default function ProductSelection({
 }: ProductSelectionProps) {
   const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
   
-  const { data: products, isLoading, error } = useQuery<Product[]>({
+  const { data: allProducts, isLoading, error } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
+
+  // Show all available products, but mark availability based on stock and slot assignment
+  const products = allProducts?.filter(product => product.available);
+
+  // Helper function to check if a product is available for purchase
+  const isProductAvailable = (product: Product) => {
+    // Check if product has spray stock AND is assigned to a spray slot
+    const hasSprayAvailability = product.sprayStock > 0 && 
+                                 product.spraySlot !== null && 
+                                 product.spraySlot >= 1 && 
+                                 product.spraySlot <= 5;
+    return hasSprayAvailability;
+  };
 
   if (isLoading) {
     return (
@@ -143,15 +156,15 @@ export default function ProductSelection({
           >
             <Card 
               className={`transition-all duration-300 touch-target flex-1 flex flex-col relative ${
-                product.sprayStock === 0
+                !isProductAvailable(product)
                   ? 'cursor-not-allowed opacity-60 bg-white/5 border-gray-600'
                   : selectedProduct?.id === product.id
                   ? 'cursor-pointer ring-2 ring-luxe-gold bg-white/20 border-luxe-gold/50'
                   : 'cursor-pointer bg-white/10 border-luxe-gold/30 hover:bg-white/20'
               } backdrop-blur-sm border`}
               onClick={() => {
-                // Auto-select 1 spray when clicking on the product card (only if in stock)
-                if (product.sprayStock > 0 && getQuantity(product.id) === 0) {
+                // Auto-select 1 spray when clicking on the product card (only if available)
+                if (isProductAvailable(product) && getQuantity(product.id) === 0) {
                   // Reset all other products to 0 when selecting a new product
                   const newQuantities: { [key: number]: number } = {};
                   Object.keys(quantities).forEach(key => {
@@ -174,13 +187,25 @@ export default function ProductSelection({
               <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="aspect-square mb-4 overflow-hidden rounded-xl relative">
                   <img 
-                    src={product.imageUrl}
+                    src={product.imageUrl || 'https://via.placeholder.com/300x300/374151/9CA3AF?text=No+Image'}
                     alt={product.name}
-                    className={`w-full h-full object-cover ${product.sprayStock === 0 ? 'grayscale' : ''}`}
+                    className={`w-full h-full object-cover ${!isProductAvailable(product) ? 'grayscale' : ''}`}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://via.placeholder.com/300x300/374151/9CA3AF?text=No+Image';
+                    }}
                   />
-                  {product.sprayStock === 0 && (
+                  {!isProductAvailable(product) && (
                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                      <span className="text-red-400 font-bold text-lg">OUT OF STOCK</span>
+                      <div className="text-center">
+                        <span className="text-red-400 font-bold text-lg">OUT OF STOCK</span>
+                        {product.sprayStock === 0 && (
+                          <p className="text-red-300 text-xs mt-1">No inventory</p>
+                        )}
+                        {product.sprayStock > 0 && !product.spraySlot && (
+                          <p className="text-red-300 text-xs mt-1">No slot assigned</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -200,52 +225,43 @@ export default function ProductSelection({
                   
                   {/* Individual Quantity Selector */}
                   <div className="border-t border-luxe-gold/30 pt-4">
-                    {product.sprayStock === 0 ? (
-                      <div className="text-center">
-                        <p className="text-red-400 font-semibold text-sm mb-2">OUT OF STOCK</p>
-                        <p className="text-gray-500 text-xs">Spray currently unavailable</p>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-center text-platinum text-sm mb-3">
-                          Number of Sprays 
-                          <span className="text-xs text-gray-400 ml-2">({product.sprayStock} available)</span>
-                        </p>
-                        <div className="flex items-center justify-center space-x-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={`w-10 h-10 rounded-full border-luxe-gold/50 hover:border-luxe-gold hover:bg-luxe-gold/20 text-white p-0 transition-all duration-200 flex items-center justify-center ${
-                              getQuantity(product.id) <= 0 || product.sprayStock === 0 ? 'opacity-50' : 'opacity-100'
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              decrementQuantity(product.id);
-                            }}
-                            disabled={getQuantity(product.id) <= 0 || product.sprayStock === 0}
-                          >
-                            <Minus className="h-4 w-4 text-white" />
-                          </Button>
-                          <span className="text-2xl font-bold text-luxe-gold min-w-[3rem] text-center">
-                            {getQuantity(product.id)}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={`w-10 h-10 rounded-full border-luxe-gold/50 hover:border-luxe-gold hover:bg-luxe-gold/20 text-white p-0 transition-all duration-200 flex items-center justify-center ${
-                              getQuantity(product.id) >= Math.min(5, product.sprayStock) || product.sprayStock === 0 ? 'opacity-50' : 'opacity-100'
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              incrementQuantity(product.id);
-                            }}
-                            disabled={getQuantity(product.id) >= Math.min(5, product.sprayStock) || product.sprayStock === 0}
-                          >
-                            <Plus className="h-4 w-4 text-white" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                    <p className="text-center text-platinum text-sm mb-3">
+                      Number of Sprays 
+                      <span className="text-xs text-gray-400 ml-2">({product.sprayStock} available)</span>
+                    </p>
+                    <div className="flex items-center justify-center space-x-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`w-10 h-10 rounded-full border-luxe-gold/50 hover:border-luxe-gold hover:bg-luxe-gold/20 text-white p-0 transition-all duration-200 flex items-center justify-center ${
+                          getQuantity(product.id) <= 0 ? 'opacity-50' : 'opacity-100'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          decrementQuantity(product.id);
+                        }}
+                        disabled={getQuantity(product.id) <= 0 || !isProductAvailable(product)}
+                      >
+                        <Minus className="h-4 w-4 text-white" />
+                      </Button>
+                      <span className="text-2xl font-bold text-luxe-gold min-w-[3rem] text-center">
+                        {getQuantity(product.id)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`w-10 h-10 rounded-full border-luxe-gold/50 hover:border-luxe-gold hover:bg-luxe-gold/20 text-white p-0 transition-all duration-200 flex items-center justify-center ${
+                          getQuantity(product.id) >= Math.min(5, product.sprayStock) ? 'opacity-50' : 'opacity-100'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          incrementQuantity(product.id);
+                        }}
+                        disabled={getQuantity(product.id) >= Math.min(5, product.sprayStock) || !isProductAvailable(product)}
+                      >
+                        <Plus className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

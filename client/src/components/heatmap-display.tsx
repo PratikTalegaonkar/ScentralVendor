@@ -181,11 +181,11 @@ export default function HeatmapDisplay() {
                   {slot.product && (
                     <img
                       src={slot.product.imageUrl}
-                      alt={slot.productName}
+                      alt={slot.productName || 'Empty slot'}
                       className="w-8 h-8 object-cover rounded mx-auto mb-1"
                     />
                   )}
-                  <div className="text-xs truncate">{slot.productName}</div>
+                  <div className="text-xs truncate">{slot.productName || 'Empty'}</div>
                   <div className="text-xs opacity-75">Uses: {slot.usageCount}</div>
                   <div className="text-xs opacity-75">{formatTimeAgo(slot.lastUsed)}</div>
                 </div>
@@ -218,11 +218,11 @@ export default function HeatmapDisplay() {
                   {slot.product && (
                     <img
                       src={slot.product.imageUrl}
-                      alt={slot.productName}
+                      alt={slot.productName || 'Empty slot'}
                       className="w-6 h-6 object-cover rounded mx-auto mb-1"
                     />
                   )}
-                  <div className="text-xs truncate">{slot.productName.slice(0, 8)}</div>
+                  <div className="text-xs truncate">{slot.productName?.slice(0, 8) || 'Empty'}</div>
                   <div className="text-xs opacity-75">{slot.usageCount}</div>
                 </div>
                 <div className="absolute top-0 right-0">

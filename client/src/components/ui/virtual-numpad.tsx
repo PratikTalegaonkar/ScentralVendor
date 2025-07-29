@@ -58,16 +58,16 @@ export default function VirtualNumpad({
   const numberButtons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-end justify-center">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-sm"
+        initial={{ y: "100%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="w-full max-w-lg mb-0"
       >
-        <Card className="bg-white/95 backdrop-blur-sm border-luxe-gold/50">
-          <CardContent className="p-6">
+        <Card className="bg-white/98 backdrop-blur-sm border-luxe-gold/50 rounded-t-3xl rounded-b-none shadow-2xl border-b-0">
+          <CardContent className="p-8 pb-10">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-charcoal text-lg">{title}</h3>
@@ -82,13 +82,13 @@ export default function VirtualNumpad({
             </div>
 
             {/* Display */}
-            <div className="bg-gray-100 rounded-lg p-4 mb-4 min-h-16 flex items-center">
+            <div className="bg-gray-100 rounded-xl p-6 mb-8 min-h-20 flex items-center shadow-inner">
               <div className="w-full text-right">
-                <div className="text-2xl font-mono text-charcoal">
+                <div className="text-3xl font-mono text-charcoal min-h-[1.2em]">
                   {currentValue || placeholder}
                 </div>
                 {currentValue && (
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-gray-500 mt-2">
                     {currentValue.length}/{maxLength} characters
                   </div>
                 )}
@@ -96,12 +96,12 @@ export default function VirtualNumpad({
             </div>
 
             {/* Numpad Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-6">
               {numberButtons.slice(0, 9).map((num, index) => (
                 <Button
                   key={num}
                   onClick={() => handleNumber(num)}
-                  className="h-14 text-xl font-semibold bg-white hover:bg-gray-100 text-charcoal border border-gray-300 touch-target"
+                  className="h-20 text-3xl font-semibold bg-white hover:bg-gray-50 text-charcoal border-2 border-gray-300 hover:border-luxe-gold/50 touch-target rounded-xl shadow-sm transition-all duration-200"
                   variant="outline"
                 >
                   {num}
@@ -112,7 +112,7 @@ export default function VirtualNumpad({
               {allowDecimal && (
                 <Button
                   onClick={() => handleNumber('.')}
-                  className="h-14 text-xl font-semibold bg-white hover:bg-gray-100 text-charcoal border border-gray-300 touch-target"
+                  className="h-20 text-3xl font-semibold bg-white hover:bg-gray-50 text-charcoal border-2 border-gray-300 hover:border-luxe-gold/50 touch-target rounded-xl shadow-sm transition-all duration-200"
                   variant="outline"
                   disabled={currentValue.includes('.')}
                 >
@@ -122,7 +122,7 @@ export default function VirtualNumpad({
               
               <Button
                 onClick={() => handleNumber('0')}
-                className={`h-14 text-xl font-semibold bg-white hover:bg-gray-100 text-charcoal border border-gray-300 touch-target ${
+                className={`h-20 text-3xl font-semibold bg-white hover:bg-gray-50 text-charcoal border-2 border-gray-300 hover:border-luxe-gold/50 touch-target rounded-xl shadow-sm transition-all duration-200 ${
                   !allowDecimal ? 'col-span-2' : ''
                 }`}
                 variant="outline"
@@ -133,22 +133,22 @@ export default function VirtualNumpad({
               {allowDecimal && (
                 <Button
                   onClick={handleBackspace}
-                  className="h-14 bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 touch-target"
+                  className="h-20 text-xl font-semibold bg-red-50 hover:bg-red-100 text-red-600 border-2 border-red-300 hover:border-red-400 touch-target rounded-xl shadow-sm transition-all duration-200"
                   variant="outline"
                 >
-                  <Delete className="h-5 w-5" />
+                  <Delete className="h-6 w-6" />
                 </Button>
               )}
             </div>
 
             {/* Action buttons */}
-            <div className="flex space-x-3">
+            <div className="flex space-x-4">
               <Button
                 onClick={handleClear}
                 variant="outline"
-                className="flex-1 h-12 text-gray-600 hover:text-gray-800 border-gray-300 touch-target"
+                className="flex-1 h-16 text-lg text-gray-600 hover:text-gray-800 border-2 border-gray-300 hover:border-gray-400 touch-target rounded-xl shadow-sm transition-all duration-200"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
+                <RotateCcw className="mr-3 h-5 w-5" />
                 Clear
               </Button>
               
@@ -156,16 +156,16 @@ export default function VirtualNumpad({
                 <Button
                   onClick={handleBackspace}
                   variant="outline"
-                  className="flex-1 h-12 bg-red-100 hover:bg-red-200 text-red-700 border-red-300 touch-target"
+                  className="flex-1 h-16 text-lg bg-red-50 hover:bg-red-100 text-red-600 border-2 border-red-300 hover:border-red-400 touch-target rounded-xl shadow-sm transition-all duration-200"
                 >
-                  <Delete className="mr-2 h-4 w-4" />
+                  <Delete className="mr-3 h-5 w-5" />
                   Delete
                 </Button>
               )}
               
               <Button
                 onClick={handleClose}
-                className="flex-1 h-12 bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target"
+                className="flex-1 h-16 text-lg bg-luxe-gold hover:bg-yellow-600 text-charcoal touch-target rounded-xl shadow-sm transition-all duration-200 font-semibold"
               >
                 Done
               </Button>

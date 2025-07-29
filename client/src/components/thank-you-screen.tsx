@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,11 +30,7 @@ interface BottleOption {
   description: string;
 }
 
-const bottleOptions: BottleOption[] = [
-  { size: "30ml", price: 499900, description: "Perfect for travel" },
-  { size: "60ml", price: 749900, description: "Ideal for daily use" },
-  { size: "100ml", price: 1099900, description: "Best value luxury" }
-];
+// Remove static bottle options - will be dynamically generated from product data
 
 export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, onExit }: ThankYouScreenProps) {
   const [selectedBottles, setSelectedBottles] = useState<{[key: string]: string | null}>({});
@@ -42,12 +38,23 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  
+  const queryClient = useQueryClient();
   const [razorpayConfig, setRazorpayConfig] = useState<any>(null);
   const { toast } = useToast();
 
-  const { data: products, isLoading } = useQuery<Product[]>({
+  const { data: allProducts, isLoading } = useQuery<Product[]>({
     queryKey: ['/api/products'],
   });
+
+  // Filter products to only show available products with bottle stock > 0
+  const products = allProducts?.filter(product => 
+    product.available && (
+      product.bottleStock30ml > 0 || 
+      product.bottleStock60ml > 0 || 
+      product.bottleStock100ml > 0
+    )
+  );
 
   // Load Razorpay configuration and script
   useEffect(() => {
@@ -96,19 +103,27 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
 
   const getTotalPrice = () => {
     return getSelectedBottles().reduce((total, [key, size]) => {
-      const option = bottleOptions.find(b => b.size === size);
-      return total + (option?.price || 0);
+      const [productId] = key.split('-');
+      const perfume = products?.find(p => p.id === parseInt(productId));
+      let price = 0;
+      if (size === '30ml') price = perfume?.price30ml || 0;
+      else if (size === '60ml') price = perfume?.price60ml || 0;
+      else if (size === '100ml') price = perfume?.price100ml || 0;
+      return total + price;
     }, 0);
   };
 
   // Create order for bottles
   const createBottleOrderMutation = useMutation({
-    mutationFn: async (bottleData: any) => {
-      const response = await apiRequest('POST', '/api/orders', bottleData);
+    mutationFn: async (bottles: any[]) => {
+      const response = await apiRequest('POST', '/api/bottle-orders', { bottles });
       return response.json();
     },
-    onSuccess: (order) => {
-      processBottlePayment(order.id);
+    onSuccess: (result) => {
+      // Use the order ID for payment processing
+      if (result.order && result.order.id) {
+        processBottlePayment(result.order.id);
+      }
     },
     onError: () => {
       toast({
@@ -140,6 +155,11 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
     onSuccess: () => {
       setPaymentProcessing(false);
       setPaymentComplete(true);
+      // Invalidate all relevant caches to refresh inventory
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/heatmap'] });
       toast({
         title: "Payment Successful",
         description: "Your bottle order has been confirmed!",
@@ -234,16 +254,16 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
 
     setPaymentProcessing(true);
     
-    // Create a dummy order for bottles (you may want to create a proper bottle order system)
-    const firstProduct = products?.[0];
-    if (firstProduct) {
-      createBottleOrderMutation.mutate({
-        productId: firstProduct.id,
-        paymentMethod: 'razorpay',
-        amount: getTotalPrice(),
-        status: 'pending',
-      });
-    }
+    // Convert selected bottles to API format
+    const bottles = selectedBottlesList.map(([key, size]) => {
+      const [productId] = key.split('-');
+      return {
+        productId: parseInt(productId),
+        bottleSize: size
+      };
+    });
+    
+    createBottleOrderMutation.mutate(bottles);
   };
 
   const formatPrice = (priceInCents: number) => {
@@ -352,14 +372,21 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
           <div className="text-center text-platinum">Loading fragrances...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {products?.map((perfume) => (
+            {products?.filter(perfume => 
+              // Only show products that have at least one bottle size with stock > 0
+              perfume.bottleStock30ml > 0 || perfume.bottleStock60ml > 0 || perfume.bottleStock100ml > 0
+            ).map((perfume) => (
               <Card key={perfume.id} className="bg-white/10 backdrop-blur-sm border-luxe-gold/30">
                 <CardContent className="p-4">
                   <div className="text-center mb-4">
                     <img 
-                      src={perfume.imageUrl} 
+                      src={perfume.imageUrl || 'https://via.placeholder.com/64x80/374151/9CA3AF?text=No+Image'} 
                       alt={perfume.name}
                       className="w-16 h-20 object-cover mx-auto rounded-lg mb-2"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://via.placeholder.com/64x80/374151/9CA3AF?text=No+Image';
+                      }}
                     />
                     <h3 className="font-serif text-sm font-semibold text-white mb-1">
                       {perfume.name}
@@ -371,15 +398,14 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                   
                   {/* Bottle Size Options */}
                   <div className="space-y-2">
-                    {bottleOptions.map((bottle) => {
+                    {[
+                      { size: '30ml', price: perfume.price30ml, stock: perfume.bottleStock30ml, description: 'Perfect for travel' },
+                      { size: '60ml', price: perfume.price60ml, stock: perfume.bottleStock60ml, description: 'Ideal for daily use' },
+                      { size: '100ml', price: perfume.price100ml, stock: perfume.bottleStock100ml, description: 'Best value luxury' }
+                    ].filter(bottle => bottle.stock > 0).map((bottle) => {
                       const key = `${perfume.id}-${bottle.size}`;
                       const isSelected = selectedBottles[key] === bottle.size;
-                      
-                      // Get stock for this bottle size
-                      const stockKey = bottle.size === '30ml' ? 'bottleStock30ml' : 
-                                     bottle.size === '60ml' ? 'bottleStock60ml' : 'bottleStock100ml';
-                      const stock = perfume[stockKey] || 0;
-                      const isOutOfStock = stock === 0;
+                      const isOutOfStock = bottle.stock === 0;
                       
                       return (
                         <Button
@@ -405,9 +431,9 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                               {formatPrice(bottle.price)}
                             </span>
                           </div>
-                          {!isOutOfStock && stock <= 5 && (
+                          {!isOutOfStock && bottle.stock <= 5 && (
                             <div className="text-xs text-orange-300 mt-1">
-                              Only {stock} left
+                              Only {bottle.stock} left
                             </div>
                           )}
                         </Button>
@@ -439,7 +465,10 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                 {getSelectedBottles().map(([key, size]) => {
                   const [productId] = key.split('-');
                   const perfume = products?.find(p => p.id === parseInt(productId));
-                  const option = bottleOptions.find(b => b.size === size);
+                  let price = 0;
+                  if (size === '30ml') price = perfume?.price30ml || 0;
+                  else if (size === '60ml') price = perfume?.price60ml || 0;
+                  else if (size === '100ml') price = perfume?.price100ml || 0;
                   
                   return (
                     <div key={key} className="flex justify-between items-center text-sm">
@@ -447,7 +476,7 @@ export default function ThankYouScreen({ product, onNewOrder, onExploreBottles, 
                         {perfume?.name} - {size}
                       </span>
                       <span className="text-luxe-gold font-medium">
-                        {formatPrice(option?.price || 0)}
+                        {formatPrice(price)}
                       </span>
                     </div>
                   );

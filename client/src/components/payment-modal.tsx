@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,6 +48,7 @@ export default function PaymentModal({
   onConfirm
 }: PaymentModalProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [razorpayConfig, setRazorpayConfig] = useState<any>(null);
@@ -127,6 +128,11 @@ export default function PaymentModal({
       return response.json();
     },
     onSuccess: (result) => {
+      // Invalidate all relevant caches to refresh inventory and orders
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/heatmap'] });
       onConfirm(result.order.id);
     },
     onError: () => {

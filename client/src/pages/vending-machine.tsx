@@ -9,6 +9,7 @@ import SuccessScreen from '@/components/success-screen';
 import ThankYouScreen from '@/components/thank-you-screen';
 import AdminLogin from '@/components/admin-login';
 import AdminPanel from '@/components/admin-panel';
+import ComprehensiveAdminDashboard from '@/components/comprehensive-admin-dashboard';
 import HomeButton from '@/components/home-button';
 import type { Screen, SelectedProduct, VendingMachineState } from '@/lib/types';
 
@@ -240,7 +241,7 @@ export default function VendingMachine() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.6 }}
           >
-            <AdminPanel
+            <ComprehensiveAdminDashboard
               onLogout={() => updateScreen('screensaver')}
             />
           </motion.div>
